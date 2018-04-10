@@ -1,0 +1,663 @@
+---
+title: 'QTS data: Spiritual curiosity'
+subtitle: 'Last updated 2018-04-09'
+output:
+  html_notebook: default
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r, include = F}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE)
+```
+
+```{r, include = F}
+# set working director
+# setwd("/Users/kweisman/Documents/Research (Stanford)/Projects/Templeton Grant/DATA WRANGLING/templeton_packets/packets123/")
+
+# load packages
+library(readxl)
+library(tidyverse)
+library(rms)
+library(knitr)
+library(kableExtra)
+
+# make custom functions
+round2 <- function(x) {format(round(x, 2), digits = 2)}
+convert_yesno <- function(x) {recode_factor(x,
+                                         "1" = "Yes",
+                                         "0" = "No",
+                                         "0.5" = "Other",
+                                         "NA" = "NA")}
+convert_yesmaybeno <- function(x) {recode_factor(x,
+                                                 "1" = "Yes",
+                                                 "0" = "No",
+                                                 "0.5" = "Maybe",
+                                                 "NA" = "NA")}
+convert_often <- function(x) {recode_factor(x,
+                                            "1" = "Yearly",
+                                            "2" = "Monthly",
+                                            "3" = "Weekly",
+                                            "4" = "Daily",
+                                            .default = "Other")}
+convert_consistfreq <- function(x) {recode_factor(x,
+                                                  "1" = "single incident",
+                                                  "2" = "inconsist., infreq.",
+                                                  "3" = "consist., infreq.",
+                                                  "4" = "consist., freq.")}
+convert_consistfreq_exact <- function(x) {
+  recode_factor(x,
+                "1" = "Once [single incident]",
+                "2" = "Several times [inconsistent and infrequent]",
+                "3" = "Once per year [consistent but infrequent]",
+                "4" = "More than once per year [frequent and consistent]")
+}
+
+# make custom palette for 6 fieldworkers
+custom_pal <- c("#1b9e77", "#e6ab02", "#d95f02", 
+                "#7570b3", "#e7298a", "#66a61e")
+
+# load question key
+key_sc <- read_excel("/Users/kweisman/Documents/Research (Stanford)/Projects/Templeton Grant/DATA WRANGLING/qts/_from Nikki/GuidetoQTS.xlsx", sheet = 1) %>%
+  rename(question_text = `Original Question`,
+         question = `New Variable`,
+         description = `Coding/description`,
+         response_options = `Likert Options`) %>%
+  mutate_all(funs(trimws))
+```
+
+```{r, include = F}
+# load data
+d <- read_excel("/Users/kweisman/Documents/Research (Stanford)/Projects/Templeton Grant/DATA WRANGLING/qts/_from Nikki/SC_TAT_SPSS data.xlsx") %>%
+  mutate_all(funs(trimws)) %>%
+  filter(!is.na(country), !is.na(quad), !is.na(researcher)) %>%
+  mutate(country = factor(country,
+                          levels = c("US", "Ghana", "Thailand", 
+                                     "China", "Vanuatu")),
+         urban_rural = factor(case_when(
+           grepl("URBAN", quad) ~ "urban",
+           grepl("RURAL", quad) ~ "rural"),
+           levels = c("urban", "rural")),
+         charismatic_local = factor(case_when(
+           grepl("NON- CHRISTIAN", quad) ~ "local",
+           grepl("CHRISTIAN", quad) & !grepl("NON- ", quad) ~ "charismatic"),
+           levels = c("charismatic", "local")),
+         quad = paste(urban_rural, charismatic_local, sep = " "),
+         researcher = factor(researcher,
+                             levels = c("JBrahinsky", "VDzokoto", "Jdulin", 
+                                        "Faulino", "Emng", "Rsmith")),
+         subject_gender = factor(case_when(
+           grepl("Female", subject_gender) ~ "Female",
+           grepl("Male", subject_gender) ~ "Male",
+           subject_gender == "Other" ~ "Other")),
+         subject_age = as.numeric(subject_age),
+         prayfreqmin = recode_factor(
+           prayfreqmin,
+           "1" = "0-15 min",
+           "2" = "15-30 min",
+           "3" = "30-60 min",
+           "4" = ">60 min"),
+         sleephabit = factor(case_when(
+           sleephabit %in% c("Back", "Baksaed (Back)") ~ "Back",
+           sleephabit %in% c("Belly mainly", "Chest", "Front", "Stomache", "Tummy") ~ "Stomach",
+           sleephabit %in% c("Saed (Side)", "Side") ~ "Side",
+           sleephabit %in% c("Back and anyhow", "Back when it happened, now side.", "Back when it happened, side now", "Back, side and front", "Both", "Both and front", "Both Ekyir na nkyÉ?n", "Both, sees more in dreams when on her back", "Side and front", "Side because used to be back when sleep oaralysis - notes bitg physical and spuritual benefits", "Sides and front", "Sleeps on all sides - back, front and side", "Tugeta (Both)", "Used to sleep on back now face down or side") ~ "Multiple",
+           sleephabit %in% c("Back Ekyir", "Neither", "No (Neither)", "Side NkyÉ?n", "Upside down", "Whenever weird on back") ~ "Other",
+           sleephabit %in% c("Didnt ask", "I dont know") ~ "Unknown"),
+           levels = c("Back", "Stomach", "Side", "Multiple", 
+                      "Other", "Unknown")),
+         morequesmoreanswr = recode_factor(
+           morequesmoreanswr,
+           "1" = "More questions",
+           "2" = "More answers",
+           "1.5" = "Other"),
+         growcomfresolvdoubt = recode_factor(
+           growcomfresolvdoubt,
+           "1" = "Grow comfortable w/doubt",
+           "0" = "Resolve doubt",
+           "0.5" = "Other"),
+         deepquesdefanswr = recode_factor(
+           deepquesdefanswr,
+           "1" = "Deeper questions",
+           "0" = "Definite answers",
+           "0.5" = "Other"),
+         subject_job = gsub("Na$", "NA", subject_job),
+         subject_job = gsub("N/a$", "NA", subject_job),
+         subject_hs = factor(case_when(
+           subject_hs %in% c("No", "No schooling", "No 2 years primary",
+                             "No only 3y primary", "No Oho/ dabi") ~ "No",
+           subject_hs %in% c("Yes", "Yes Nyew", "Year 9") ~ "Yes",
+           subject_hs %in% c("à¹?à¸?à¹?") ~ "Unknown")),
+         subject_school = factor(case_when(
+           subject_school %in% c("No", "No Oho/ dabi") ~ "No",
+           subject_school %in% c("Yes", "Yes Nyew", "1yr",
+                                 "1year at Tangoa") ~ "Yes",
+           subject_school %in% c("Vocational", "Technical") ~ "Tech/Voc",
+           subject_school %in% c("Masonry apprenticeship",
+                                 "Electrician apprenticeship",
+                                 "Catering apprenticeship") ~ "Apprenticeship",
+           subject_school %in% c("Other", "Workshops",
+                                 "Went to mission school after high school", 
+                                 "Some courses") ~ "Other",
+           grepl("à¹?", subject_school) ~ "Unknown"),
+           levels = c("Yes", "Tech/Voc", "Apprenticeship", 
+                      "No", "Other", "Unknown"))) %>%
+  mutate_at(vars(subject_hs, subject_school, specialrole, #communicatewgod,
+                 praysilly, prayprepbody, prayprepmind, tongues, godviapeople,
+                 godviascript, godviamind, godvoxstrong, godvoxaloud, 
+                 godvoxaloud_outsidehead, godvoxaloud_withears, 
+                 godvoxaloud_turnhead, godvoxaloud_waking, godcommpics, 
+                 godviavisions, godviavisions_outsidehead, 
+                 godviavisions_witheyes, godviavisions_waking, godviadreams, 
+                 godguideviaknowing, godguideviasensations, godsenseplaceinbody,
+                 godsenseplaceinbody_loc, godviabodyexperiences, godviatouch,
+                 godviatouch_realtouch, godviatouch_waking, godviasmell,
+                 godviasmell_realsmell, godviasmell_waking, godexpviaawe, 
+                 godconfirm, neartangiblegod, presencenotgod, beingentbody, 
+                 seehearnotgod, whitelight, trmblshakespirtpwr, rushofspiritpwr,
+                 intenseemospiritpwr, timeslowpray, spiritbeingencounter, 
+                 voxwhenalone, voxwhenalone_outsidehead, voxwhenalone_withears,
+                 voxwhenalone_turnhead, voxwhenalone_waking, seethingscornereye,
+                 seethingscornereye_outsidehead, unusualexphearing_judge,
+                 unusualexpseeing_judge, unusualexptouch_judge, 
+                 unusualexpgod_judge, unusualexpentity_judge, trueanswers_judge,
+                 falseanswers_judge, godvoxmistaken), 
+            funs(convert_yesno)) %>%
+  mutate_at(vars(godvoxaloud_judge, godviavisions_judge, godviatouch_judge,
+                 godviasmell_judge, neartangiblegod_judge, presencenotgod_judge,
+                 presencedemon, presencedemon_judge, beingentbody_judge,
+                 seehearnotgod_judge, whitelight_judge, mindspiritexitbody,
+                 humanshapeshift, spiritbeingencounter_judge, sleepparalysis,
+                 voxwhenalone_judge, seethingscornereye_judge, othergodnotreal,
+                 selfunsuregodreal, goddoubt, goddoubtdisclose, 
+                 doubtimpttogrowth),
+            funs(convert_yesmaybeno)) %>%
+  mutate_at(vars(godviapeople_freq, godviascript_freq, godviamind_freq,
+                 godcommpics_freq, godguideviaknowing_freq, 
+                 godguideviasensations_freq),
+            funs(convert_often)) %>%
+  mutate_at(vars(godvoxaloud_freq, godviavisions_freq, godviadreams_freq,
+                 godviatouch_freq, godviasmell_freq, godexpviaawe_freq,
+                 neartangiblegod_freq, presencenotgod_freq, presencedemon_freq,
+                 beingentbody_freq, trmblshakespirtpwr_freq, 
+                 rushofspiritpwr_freq, intenseemospiritpwr_freq, 
+                 timeslowpray_freq, mindspiritexitbody_freq, 
+                 sleepparalysis_freq, voxwhenalone_freq, 
+                 seethingscornereye_freq),
+            funs(convert_consistfreq))
+```
+
+This is a first-pass exploration of the QTS data for the "Spiritual curiosity" interview.
+
+```{r, fig.width = 3, fig.asp = 1}
+d %>% 
+  ggplot(aes(x = country, fill = researcher)) +
+  facet_grid(urban_rural ~ charismatic_local ~ country,
+             scales = "free_x", space = "free") +
+  geom_bar() +
+  scale_fill_manual(values = custom_pal) +
+  scale_y_continuous(breaks = seq(0, 1000, 5)) +
+  labs(title = "Count of surveys by quadrant",
+       x = "Site",
+       y = "Count",
+       fill = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top") +
+  guides(fill = guide_legend(ncol = 6, byrow = TRUE))
+```
+
+# Histograms of individual questions, by quadrant
+
+```{r, include = F}
+# make function to create pretty histograms
+custom_histo <- function(x) {
+  
+  q_text <- data.frame(key_sc %>% 
+                         filter(!is.na(question_text), 
+                                question == x))$question_text
+  q_text <- gsub("\\*\\*", "", q_text)
+  q_text <- gsub("&rsquo;", "'", q_text)
+  q_text <- paste("Question text", q_text, sep = ": ")
+  q_text <- gsub('(.{1,80})(\\s|$)', '\\1\n', q_text)
+  
+  df_plot <- d %>%
+    count(country, researcher, urban_rural, charismatic_local, 
+          !!as.symbol(x)) %>%
+    group_by(country, researcher, urban_rural, charismatic_local) %>%
+    mutate(prop = n/sum(n, na.rm = T),
+           label = paste0(as.numeric(round2(prop)) * 100, "%")) %>%
+    rename(var = !!as.symbol(x)) %>%
+    mutate(is_value = !is.na(var))
+  
+  plot <- df_plot %>%
+    ggplot(aes(x = var, y = n, 
+               fill = researcher, alpha = is_value,
+               label = label)) +
+    facet_grid(urban_rural ~ charismatic_local ~ country) +
+    geom_bar(stat = "identity") +
+    geom_text(size = 2, nudge_y = 2) +
+    scale_fill_manual(values = custom_pal) +
+    scale_alpha_discrete(guide = "none", range = c(0.5, 1)) +
+    labs(title = paste("Distribution of responses:", x),
+         subtitle = q_text,
+         x = "Response",
+         y = "Count",
+         fill = "Researcher") +
+    theme_bw() +
+    theme(legend.position = "top",
+          axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+    guides(fill = guide_legend(ncol = 6, byrow = TRUE))
+  
+  return(plot)
+}
+```
+
+# Prayer
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("prayfreqmin")
+```
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("praysilly")
+```
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("prayprepbody")
+custom_histo("prayprepmind")
+custom_histo("puremindmovethoughts")
+```
+
+# Tongues
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("tongues")
+```
+
+# Personal communication with God*
+
+## ... via other people
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("godviapeople")
+custom_histo("godviapeople_freq")
+```
+
+## ... via scripture
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("godviascript")
+custom_histo("godviascript_freq")
+```
+
+## ... via God* speaking in your mind
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("godviamind")
+custom_histo("godviamind_freq")
+```
+
+## Qualities of the voice of God*
+
+### ... you can be mistaken
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("godvoxmistaken") 
+```
+
+### ... strong
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("godvoxstrong")
+```
+
+### ... a voice out loud
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("godvoxaloud")
+custom_histo("godvoxaloud_outsidehead")
+custom_histo("godvoxaloud_withears")
+custom_histo("godvoxaloud_turnhead")
+custom_histo("godvoxaloud_waking")
+custom_histo("godvoxaloud_freq")
+custom_histo("godvoxaloud_judge")
+```
+
+# ... via pictures
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("godcommpics")
+custom_histo("godcommpics_freq")
+```
+
+## ... via visions
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("godviavisions")
+custom_histo("godviavisions_outsidehead")
+custom_histo("godviavisions_witheyes")
+custom_histo("godviavisions_waking")
+custom_histo("godviavisions_freq")
+custom_histo("godviavisions_judge")
+```
+
+## ... via dreams
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("godviadreams")
+custom_histo("godviadreams_freq")
+```
+
+# ... via knowing
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("godguideviaknowing")
+custom_histo("godguideviaknowing_freq")
+```
+
+## ... via the body
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("godsenseplaceinbody")
+custom_histo("godsenseplaceinbody_loc")
+custom_histo("godviabodyexperiences")
+```
+
+## ... via touch
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("godviatouch")
+custom_histo("godviatouch_realtouch")
+custom_histo("godviatouch_waking")
+custom_histo("godviatouch_freq")
+custom_histo("godviatouch_judge")
+```
+
+## ... via smell
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("godviasmell")
+custom_histo("godviasmell_realsmell")
+custom_histo("godviasmell_waking")
+custom_histo("godviasmell_freq")
+custom_histo("godviasmell_judge")
+```
+
+## ... ways of feeling beyond the everyday
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("godexpviaawe")
+custom_histo("godexpviaawe_freq")
+custom_histo("godexpviaawe_freqcombo")
+```
+
+# Presence of God*
+
+## ... moment of confirmation
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("godconfirm")
+```
+
+## ... tangibility
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("neartangiblegod")
+custom_histo("neartangiblegod_freq")
+custom_histo("neartangiblegod_judge")
+```
+
+## ... other presences
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("presencenotgod")
+custom_histo("presencenotgod_freq")
+custom_histo("presencenotgod_judge")
+```
+
+## ... presence of demons
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("presencedemon")
+custom_histo("presencedemon_freq")
+custom_histo("presencedemon_judge")
+```
+
+## ... another being entering the body
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("beingentbody")
+custom_histo("beingentbody_freq")
+custom_histo("beingentbody_judge")
+```
+
+## ... other entities
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("seehearnotgod")
+custom_histo("seehearnotgod_judge")
+```
+
+## ... white lights
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("whitelight")
+custom_histo("whitelight_judge")
+```
+
+# Experiences
+
+## ... trembling & shaking
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("whitelight_judge")
+custom_histo("trmblshakespirtpwr_freq")
+```
+
+## ... rush of power
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("rushofspiritpwr")
+custom_histo("rushofspiritpwr_freq")
+```
+
+## ... intense emotion
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("intenseemospiritpwr")
+custom_histo("intenseemospiritpwr_freq")
+```
+
+## ... time slowing
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("timeslowpray")
+custom_histo("timeslowpray_freq")
+```
+
+## ... out of body
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("mindspiritexitbody")
+custom_histo("mindspiritexitbody_freq")
+```
+
+## ... human shape-shifting
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("humanshapeshift")
+```
+
+## ... other encounters with spirit beings
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("spiritbeingencounter")
+custom_histo("spiritbeingencounter_judge")
+```
+
+## ... sleep paralysis
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("sleepparalysis")
+custom_histo("sleepparalysis_freq")
+```
+
+## ... sleep habits
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("sleephabit")
+```
+
+# Voices
+
+## ... hearing a voice when you're alone
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("voxwhenalone")
+custom_histo("voxwhenalone_outsidehead")
+custom_histo("voxwhenalone_withears")
+custom_histo("voxwhenalone_turnhead")
+custom_histo("voxwhenalone_waking")
+custom_histo("voxwhenalone_freq")
+custom_histo("voxwhenalone_judge")
+```
+
+## ... seeing something out of the corner of your eye
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("seethingscornereye")
+custom_histo("seethingscornereye_outsidehead")
+custom_histo("seethingscornereye_witheyes")
+custom_histo("seethingscornereye_waking")
+custom_histo("seethingscornereye_freq")
+custom_histo("seethingscornereye_judge")
+```
+
+# Skepticism, doubt, spiritual growth
+
+## ... others' doubt
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("othergodnotreal")
+```
+
+## ... own doubt
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("selfunsuregodreal")
+custom_histo("goddoubt")
+```
+
+## ... spiritual growth
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("goddoubtdisclose")
+custom_histo("morequesmoreanswr")
+custom_histo("doubtimpttogrowth")
+custom_histo("growcomfresolvdoubt")
+custom_histo("deepquesdefanswr")
+```
+
+# Researcher meta-judgments
+
+## ... of unusual experiences (by sensory modality)
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("unusualexphearing_judge")
+custom_histo("unusualexpseeing_judge")
+custom_histo("unusualexptouch_judge")
+custom_histo("unusualexpgod_judge")
+custom_histo("unusualexpentity_judge")
+```
+
+## ... of quality of responses
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("trueanswers_judge")
+custom_histo("falseanswers_judge")
+```
+
+# Demographics
+
+## ... gender
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("subject_gender")
+```
+
+## ... age
+
+```{r, fig.width = 3, fig.asp = 1}
+d %>%
+  group_by(country, urban_rural, charismatic_local) %>%
+  mutate(med_age = median(subject_age, na.rm = T)) %>%
+  ungroup() %>%
+  ggplot(aes(x = subject_age, fill = researcher)) +
+  facet_grid(urban_rural ~ charismatic_local ~ country) +
+  geom_vline(aes(xintercept = med_age), lty = 2, size = 0.2) +
+  geom_histogram(bins = 0.2 * (max(d$subject_age, na.rm = T) -
+                                 min(d$subject_age, na.rm = T) + 1)) +
+  geom_text(data = . %>% 
+              distinct(country, urban_rural, charismatic_local, med_age),
+            aes(x = 20, y = 10, fill = NULL,
+                label = paste0("Median: ", med_age, "y")),
+            size = 2, hjust = 0) +
+  scale_fill_manual(values = custom_pal) +
+  scale_alpha_discrete(guide = "none", range = c(0.5, 1)) +
+  labs(title = paste("Distribution of responses:", "subject_age"),
+       subtitle = "What is your age?",
+       x = "Age (y)",
+       y = "Count",
+       fill = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(fill = guide_legend(ncol = 6, byrow = TRUE))
+```
+
+## ... job
+
+```{r, include = F}
+job_tab <- d %>% 
+  distinct(country, # researcher, 
+           quad, subject_job) %>%
+  select(country, # researcher, 
+         quad, subject_job) %>%
+  group_by(country, # researcher, 
+           quad) %>%
+  mutate(subject_job = glue::collapse(subject_job, sep = ", ")) %>%
+  ungroup() %>%
+  mutate(quad = factor(quad, 
+                       levels = c("urban charismatic", "urban local",
+                                  "rural charismatic", "rural local"))) %>%
+  rename(Country = country,
+         # Researcher = researcher,
+         Quad = quad,
+         Jobs = subject_job) %>%
+  distinct() %>%
+  arrange(Country, Quad)
+```
+
+```{r, results = "asis"}
+job_tab %>%
+  kable("html") %>%
+  kable_styling(position = "float_left") %>%
+  row_spec(1:4, color = "black", background = "#b3e2cd") %>%
+  row_spec(5:6, color = "black", background = "#fdcdac") %>%
+  row_spec(7:8, color = "black", background = "#fff2ae") %>%
+  row_spec(9:12, color = "black", background = "#cbd5e8") %>%
+  row_spec(13:16, color = "black", background = "#f4cae4") %>%
+  row_spec(17:20, color = "black", background = "#e6f5c9")
+```
+
+## ... education
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("subject_hs")
+```
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("subject_school")
+```
+
