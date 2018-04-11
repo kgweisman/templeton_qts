@@ -1,0 +1,140 @@
+---
+title: 'QTS data: Demographics'
+subtitle: 'Last updated 2018-04-10'
+output:
+  html_notebook: default
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r, include = F}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE)
+```
+
+```{r, include = F}
+# load packages
+library(readxl)
+library(tidyverse)
+library(rms)
+library(knitr)
+library(kableExtra)
+
+# run setup script
+source("/Users/kweisman/Documents/Research (Stanford)/Projects/Templeton Grant/DATA WRANGLING/templeton_qts/scripts/setup_qts_kw.R")
+
+# run data wrangling script
+source("/Users/kweisman/Documents/Research (Stanford)/Projects/Templeton Grant/DATA WRANGLING/templeton_qts/scripts/wrangling_qts_kw.R")
+
+# set key
+key <- key_sc
+```
+
+This is a first-pass exploration of the QTS data for the "Spiritual curiosity" interview.
+
+```{r, fig.width = 3, fig.asp = 1}
+d %>% 
+  left_join(d %>% count(country, researcher, urban_rural, charismatic_local)) %>%
+  ggplot(aes(x = country, fill = researcher, label = n)) +
+  facet_grid(urban_rural ~ charismatic_local ~ country,
+             scales = "free_x", space = "free") +
+  geom_bar() +
+  geom_text(data = . %>% 
+              distinct(country, researcher, urban_rural, charismatic_local, n), 
+            aes(y = n + 3), size = 3) +
+  scale_fill_manual(values = custom_pal) +
+  scale_y_continuous(breaks = seq(0, 1000, 5)) +
+  labs(title = "Count of surveys by quadrant",
+       x = "Site",
+       y = "Count",
+       fill = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top") +
+  guides(fill = guide_legend(ncol = 6, byrow = TRUE))
+```
+
+This is a first-pass exploration of the QTS data for demographics questions.
+
+# Demographics
+
+## ... gender
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("subject_gender")
+```
+
+## ... age
+
+```{r, fig.width = 3, fig.asp = 1}
+d %>%
+  group_by(country, urban_rural, charismatic_local) %>%
+  mutate(med_age = median(subject_age, na.rm = T)) %>%
+  ungroup() %>%
+  ggplot(aes(x = subject_age, fill = researcher)) +
+  facet_grid(urban_rural ~ charismatic_local ~ country) +
+  geom_vline(aes(xintercept = med_age), lty = 2, size = 0.2) +
+  geom_histogram(bins = 0.2 * (max(d$subject_age, na.rm = T) -
+                                 min(d$subject_age, na.rm = T) + 1)) +
+  geom_text(data = . %>% 
+              distinct(country, urban_rural, charismatic_local, med_age),
+            aes(x = 20, y = 10, fill = NULL,
+                label = paste0("Median: ", med_age, "y")),
+            size = 2, hjust = 0) +
+  scale_fill_manual(values = custom_pal) +
+  scale_alpha_discrete(guide = "none", range = c(0.5, 1)) +
+  labs(title = paste("Distribution of responses:", "subject_age"),
+       subtitle = "What is your age?",
+       x = "Age (y)",
+       y = "Count",
+       fill = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(fill = guide_legend(ncol = 6, byrow = TRUE))
+```
+
+## ... job
+
+```{r, include = F}
+job_tab <- d %>% 
+  distinct(country, # researcher, 
+           quad, subject_job) %>%
+  select(country, # researcher, 
+         quad, subject_job) %>%
+  group_by(country, # researcher, 
+           quad) %>%
+  mutate(subject_job = glue::collapse(subject_job, sep = ", ")) %>%
+  ungroup() %>%
+  mutate(quad = factor(quad, 
+                       levels = c("urban charismatic", "urban local",
+                                  "rural charismatic", "rural local"))) %>%
+  rename(Country = country,
+         # Researcher = researcher,
+         Quad = quad,
+         Jobs = subject_job) %>%
+  distinct() %>%
+  arrange(Country, Quad)
+```
+
+```{r, results = "asis"}
+job_tab %>%
+  kable("html") %>%
+  kable_styling(position = "float_left") %>%
+  row_spec(1:4, color = "black", background = "#b3e2cd") %>%
+  row_spec(5:6, color = "black", background = "#fdcdac") %>%
+  row_spec(7:8, color = "black", background = "#fff2ae") %>%
+  row_spec(9:12, color = "black", background = "#cbd5e8") %>%
+  row_spec(13:16, color = "black", background = "#f4cae4") %>%
+  row_spec(17:20, color = "black", background = "#e6f5c9")
+```
+
+## ... education
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("subject_hs")
+```
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("subject_school")
+```
+
