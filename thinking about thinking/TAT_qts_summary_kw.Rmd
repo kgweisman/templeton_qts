@@ -1,0 +1,401 @@
+---
+title: 'QTS data: Thinking about thinking'
+subtitle: 'Last updated 2018-04-09'
+output:
+  html_notebook: default
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r, include = F}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE)
+```
+
+```{r, include = F}
+# load packages
+library(readxl)
+library(tidyverse)
+library(rms)
+library(knitr)
+library(kableExtra)
+
+# run setup script
+source("/Users/kweisman/Documents/Research (Stanford)/Projects/Templeton Grant/DATA WRANGLING/templeton_qts/scripts/setup_qts_kw.R")
+
+# run data wrangling script
+source("/Users/kweisman/Documents/Research (Stanford)/Projects/Templeton Grant/DATA WRANGLING/templeton_qts/scripts/wrangling_qts_kw.R")
+
+# set key
+key <- key_tat
+```
+
+This is a first-pass exploration of the QTS data for the "Thinking about thinking" interview.
+
+# Absorption
+
+## ... overall summary score
+
+*NOTE: Nikki has concerns that this might not deal adequately with people who skipped questions.**
+
+```{r, fig.width = 3, fig.asp = 1}
+d %>%
+  filter(!is.na(abs_score)) %>%
+  group_by(country, urban_rural, charismatic_local) %>%
+  mutate(med_abs = median(abs_score, na.rm = T)) %>%
+  ungroup() %>%
+  ggplot(aes(x = abs_score, fill = researcher)) +
+  facet_grid(urban_rural ~ charismatic_local ~ country) +
+  geom_vline(aes(xintercept = med_abs), lty = 2, size = 0.2) +
+  geom_histogram(bins = 0.2 * (max(d$abs_score, na.rm = T) -
+                                 min(d$abs_score, na.rm = T) + 1)) +
+  geom_text(data = . %>% 
+              distinct(country, urban_rural, charismatic_local, med_abs),
+            aes(x = 0, y = 12, fill = NULL,
+                label = paste0("Median: ", med_abs)),
+            size = 2, hjust = 0) +
+  scale_fill_manual(values = custom_pal) +
+  scale_alpha_discrete(guide = "none", range = c(0.5, 1)) +
+  labs(title = paste("Distribution of responses:", "abs_score"),
+       subtitle = "Sum of all absorption items (range: 0-34)",
+       x = "Score",
+       y = "Count",
+       fill = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(fill = guide_legend(ncol = 6, byrow = TRUE))
+```
+
+## ... individual 'absorption' items
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("childexp_abs")
+custom_histo("forgetsurrounding_abs")
+custom_histo("poeticlanguage_abs")
+custom_histo("starepicture_abs")
+```
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("mindenvelopworld_abs")
+custom_histo("cloudshapes_abs")
+custom_histo("vividdaydream_abs")
+custom_histo("mysticalexp_abs")
+```
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("stepoutsidemyself_abs")
+custom_histo("textures_abs")
+custom_histo("doublyreal_abs")
+custom_histo("caughtupinmusic_abs")
+```
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("heavybody_abs")
+custom_histo("sensepresence_abs")
+custom_histo("woodfireimagine_abs")
+custom_histo("immersednature_abs")
+```
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("colormeaning_abs")
+custom_histo("wanderthoughtstask_abs")
+custom_histo("clearpastexp_abs")
+custom_histo("meaninglesstoothers_abs")
+```
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("actinginplay_abs")
+custom_histo("visualthoughts_abs")
+custom_histo("delightsmallthings_abs")
+custom_histo("organmusic_abs")
+```
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("changenoise_abs")
+custom_histo("vividsmellmemories_abs")
+custom_histo("synesthesiasound_abs")
+custom_histo("predictwords_abs")
+```
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("physicalmemories_abs")
+custom_histo("fascinatingvoice_abs")
+custom_histo("invisiblepresence_abs")
+custom_histo("sponthoughtsimages_abs")
+```
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("synesthesiasmell_abs")
+custom_histo("emosunset_abs")
+```
+
+# Mental causation
+
+## ... ANGER
+
+## ... mechanism unspecified
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("hurtwfeelings_anger")
+custom_histo("hurtwthoughts_anger")
+```
+
+## ... health
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("healtheffectbyproxy_anger")
+```
+
+## ... via spirit mediation
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("hurtviaspirit_anger")
+custom_histo("awarespirit_anger")
+custom_histo("healtheffectself_anger")
+```
+
+## ... regulation
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("stopemo_anger")
+custom_histo("removethoughts_anger")
+custom_histo("controlemo_anger")
+custom_histo("shouldcontrol_anger")
+custom_histo("trycontrol_anger")
+```
+
+## ... sharing
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("disclose_anger")
+```
+
+## ... CARING
+
+## ... mechanism unspecified
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("helpwthoughts_caring")
+```
+
+## ... via spirit mediation
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("helpviaspirit_caring")
+custom_histo("awarespirit_caring")
+custom_histo("healtheffectself_caring")
+```
+
+## ... health
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("healtheffectbyproxy_caring")
+```
+
+
+## ... regulation
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("toomuch_caring")
+```
+
+## ... sharing
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("disclose_caring")
+```
+
+## ... ENVY
+
+## ... mechanism unspecified
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("hurtwfeelings_envy")
+custom_histo("hurtwthoughts_envy")
+```
+
+## ... health
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("healtheffectself_envy")
+```
+
+## ... via spirit mediation
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("hurtviaspirit_envy")
+custom_histo("awarespirit_envy")
+custom_histo("disclose_envy")
+```
+
+
+## ... sharing
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("disclose_envy")
+```
+
+## general
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("spiritsusethoughtsharm")
+custom_histo("witchcraft_judge")
+```
+
+# Interiority
+
+## ... sharing
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("socialharmony")
+custom_histo("happyface")
+custom_histo("controlface")
+```
+
+## ... understanding/reflection
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("understandthoughts")
+```
+
+## ... danger
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("sharingdangerous")
+```
+
+## ... talking
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("talkabtfeelings")
+custom_histo("sharefeelingshere")
+```
+
+## general
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("sharethought_judge")
+custom_histo("controlbody_judge")
+```
+
+# Imagination
+
+## ... child vignettes 
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("choochoo_imagine")
+custom_histo("choochoo_encourage")
+```
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("teddydinner_imagine")
+custom_histo("teddydinner_encourage")
+```
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("invisiblefriend_imagine")
+custom_histo("invisiblefriend_encourage")
+```
+
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("childsplayopinion_imagine")
+```
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("adultsplaywchild_imagine")
+custom_histo("adultsplaywchild_encourage")
+```
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("adultsscarekids_imagine")
+custom_histo("adultscarekids_encourage")
+```
+
+## ... cup of tea for God
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("teaforgod_imagine")
+custom_histo("teaforgod_encourage")
+custom_histo("teaforgod_outcome")
+```
+
+## ... general
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("adultsimagineimpossible_import")
+custom_histo("adultsimaginepossible_import")
+```
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("magicalthinking")
+```
+
+# SCID
+
+## ... summary score
+
+```{r, fig.width = 3, fig.asp = 1}
+d %>%
+  select(subject_name, country, researcher, urban_rural, charismatic_local, 
+         ends_with("_scid")) %>%
+  gather(question, response, ends_with("_scid")) %>%
+  mutate(response = as.numeric(factor(response,
+                                      levels = c("Not present",
+                                                 "Present but uncertain",
+                                                 "Persuaded of issue")))) %>%
+  group_by(country, researcher, urban_rural, charismatic_local, subject_name) %>%
+  summarise(scid_score = sum(response, na.rm = T)) %>%
+  ungroup() %>%
+  filter(!is.na(scid_score)) %>%
+  group_by(country, researcher, urban_rural, charismatic_local) %>%
+  mutate(med_scid = median(scid_score, na.rm = T)) %>%
+  ungroup() %>%
+  ggplot(aes(x = scid_score, fill = researcher)) +
+  facet_grid(urban_rural ~ charismatic_local ~ country) +
+  geom_vline(aes(xintercept = med_scid), lty = 2, size = 0.2) +
+  geom_histogram(binwidth = 1) +
+  geom_text(data = . %>% 
+              distinct(country, urban_rural, charismatic_local, med_scid),
+            aes(x = 0, y = 20, fill = NULL,
+                label = paste0("Median: ", med_scid)),
+            size = 2, hjust = 0) +
+  scale_fill_manual(values = custom_pal) +
+  scale_alpha_discrete(guide = "none", range = c(0.5, 1)) +
+  labs(title = paste("Distribution of responses:", "scid_score"),
+       subtitle = "Sum of all SCID items (range: 0-16, for now)",
+       x = "Score",
+       y = "Count",
+       fill = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(fill = guide_legend(ncol = 6, byrow = TRUE))
+```
+
+## ... individual items
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("specialmessage_scid")
+custom_histo("specialmessagenotgod_scid")
+custom_histo("threatening_scid")
+custom_histo("importantperson_scid")
+```
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("hypochondriasis_scid")
+custom_histo("somaticshift_scid")
+custom_histo("terribleact_scid")
+custom_histo("alienthought_scid")
+```
+
+```{r, fig.width = 3, fig.asp = 1, include = F}
+# custom_histo("thoughtstaken_scid")
+# custom_histo("thoughtsbroadcast_scid")
+# custom_histo("hearthings_scid")
+# custom_histo("hearthingsfreq_scid")
+# custom_histo("hearthingscontent_scid")
+# custom_histo("hospitalhx_scid")
+```
+
