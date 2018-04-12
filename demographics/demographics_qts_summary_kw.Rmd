@@ -1,6 +1,6 @@
 ---
 title: 'QTS data: Demographics'
-subtitle: 'Last updated 2018-04-10'
+subtitle: 'Last updated 2018-04-12'
 output:
   html_notebook: default
   html_document:
@@ -30,7 +30,7 @@ source("/Users/kweisman/Documents/Research (Stanford)/Projects/Templeton Grant/D
 key <- key_sc
 ```
 
-This is a first-pass exploration of the QTS data for the "Spiritual curiosity" interview.
+This is a first-pass exploration of the demographics questions for the QTS data.
 
 ```{r, fig.width = 3, fig.asp = 1}
 d %>% 
@@ -136,5 +136,11 @@ custom_histo("subject_hs")
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("subject_school")
+```
+
+## ... marital status
+
+```{r, fig.width = 4, fig.asp = 1}
+custom_histo("subject_marital")
 ```
 

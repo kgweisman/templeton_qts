@@ -17,11 +17,13 @@ convert_yesno <- function(x) {recode_factor(x,
                                             "0" = "No",
                                             "1" = "Yes",
                                             "0.5" = "Other",
+                                            .default = "Other",
                                             "NA" = "NA")}
 convert_yesmaybeno <- function(x) {recode_factor(x,
                                                  "0" = "No",
                                                  "0.5" = "Maybe",
                                                  "1" = "Yes",
+                                                 .default = "Other",
                                                  "NA" = "NA")}
 convert_often <- function(x) {recode_factor(x,
                                             "1" = "Yearly",
@@ -40,21 +42,26 @@ convert_often2 <- function(x) {recode_factor(x,
 convert_often3 <- function(x) {recode_factor(x,
                                              "0" = "Never",
                                              "1" = "Rarely",
-                                             "2" = "Often",
-                                             "3" = "Very Often",
+                                             "2" = "Sometimes",
+                                             "3" = "Often",
+                                             "4" = "Always",
                                              .default = "Other",
                                              "NA" = "NA")}
 convert_consistfreq <- function(x) {recode_factor(x,
-                                                  "1" = "single incident",
-                                                  "2" = "inconsist., infreq.",
-                                                  "3" = "consist., infreq.",
-                                                  "4" = "consist., freq.")}
+                                                  "1" = "Single incident",
+                                                  "2" = "Inconsist., infreq.",
+                                                  "3" = "Consist., infreq.",
+                                                  "4" = "Consist., freq.",
+                                                  .default = "Other",
+                                                  "NA" = "NA")}
 convert_consistfreq_exact <- function(x) {
   recode_factor(x,
                 "1" = "Once [single incident]",
                 "2" = "Several times [inconsistent and infrequent]",
                 "3" = "Once per year [consistent but infrequent]",
-                "4" = "More than once per year [frequent and consistent]")
+                "4" = "More than once per year [frequent and consistent]",
+                .default = "Other",
+                "NA" = "NA")
 }
 convert_important <- function(x) {recode_factor(x,
                                                 "0" = "Not at all important",
@@ -66,12 +73,16 @@ convert_important <- function(x) {recode_factor(x,
 convert_present <- function(x) {recode_factor(x,
                                               "0" = "Not present",
                                               "1" = "Present but uncertain",
-                                              "2" = "Persuaded of issue")}
+                                              "2" = "Persuaded of issue",
+                                              .default = "Other",
+                                              "NA" = "NA")}
 convert_encourage <- function(x) {recode_factor(x,
                                                 "0" = "Strongly discourage",
                                                 "1" = "Discourage",
                                                 "2" = "Encourage",
-                                                "3" = "Strongly encourage")}
+                                                "3" = "Strongly encourage",
+                                                .default = "Other",
+                                                "NA" = "NA")}
 # make function to create pretty histograms
 custom_histo <- function(x) {
   

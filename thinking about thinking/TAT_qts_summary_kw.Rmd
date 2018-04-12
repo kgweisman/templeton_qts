@@ -1,8 +1,9 @@
 ---
 title: 'QTS data: Thinking about thinking'
-subtitle: 'Last updated 2018-04-09'
+subtitle: 'Last updated 2018-04-12'
 output:
-  html_notebook: default
+  html_notebook: 
+    toc: true
   html_document:
     df_print: paged
   pdf_document: default
@@ -34,9 +35,34 @@ This is a first-pass exploration of the QTS data for the "Thinking about thinkin
 
 # Absorption
 
-## ... overall summary score
+## overall summary score
 
 *NOTE: Nikki has concerns that this might not deal adequately with people who skipped questions.**
+
+```{r, fig.width = 4, fig.asp = 0.6}
+d %>%
+  filter(!is.na(abs_score)) %>%
+  group_by(country, researcher, urban_rural, charismatic_local) %>%
+  do(data.frame(rbind(smean.cl.boot(.$abs_score)))) %>%
+  ungroup() %>%
+  ggplot(aes(x = interaction(charismatic_local, urban_rural), 
+             y = Mean, color = researcher)) +
+  facet_grid(~ country, scales = "free", space = "free") +
+  geom_pointrange(aes(ymin = Lower, ymax = Upper)) +
+  geom_text(aes(label = round(Mean, 1), y = Lower), 
+            color = "black", nudge_y = -2, size = 2) +
+  scale_color_manual(values = custom_pal) +
+  scale_y_continuous(limits = c(0, 34)) +
+  labs(title = "Mean responses: total absorption score (range: 0-34)",
+       subtitle = "Error bars are 95% confidence intervals",
+       x = "Score",
+       y = "Count",
+       color = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(fill = guide_legend(ncol = 6, byrow = TRUE))
+```
 
 ```{r, fig.width = 3, fig.asp = 1}
 d %>%
@@ -67,7 +93,7 @@ d %>%
   guides(fill = guide_legend(ncol = 6, byrow = TRUE))
 ```
 
-## ... individual 'absorption' items
+## individual 'absorption' items
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("childexp_abs")
@@ -132,22 +158,22 @@ custom_histo("emosunset_abs")
 
 # Mental causation
 
-## ... ANGER
+## ANGER
 
-## ... mechanism unspecified
+### mechanism unspecified
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("hurtwfeelings_anger")
 custom_histo("hurtwthoughts_anger")
 ```
 
-## ... health
+### health
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("healtheffectbyproxy_anger")
 ```
 
-## ... via spirit mediation
+### via spirit mediation
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("hurtviaspirit_anger")
@@ -155,7 +181,7 @@ custom_histo("awarespirit_anger")
 custom_histo("healtheffectself_anger")
 ```
 
-## ... regulation
+### regulation
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("stopemo_anger")
@@ -165,21 +191,21 @@ custom_histo("shouldcontrol_anger")
 custom_histo("trycontrol_anger")
 ```
 
-## ... sharing
+### sharing
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("disclose_anger")
 ```
 
-## ... CARING
+## CARING
 
-## ... mechanism unspecified
+### mechanism unspecified
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("helpwthoughts_caring")
 ```
 
-## ... via spirit mediation
+### via spirit mediation
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("helpviaspirit_caring")
@@ -187,41 +213,40 @@ custom_histo("awarespirit_caring")
 custom_histo("healtheffectself_caring")
 ```
 
-## ... health
+### health
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("healtheffectbyproxy_caring")
 ```
 
-
-## ... regulation
+### regulation
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("toomuch_caring")
 ```
 
-## ... sharing
+### sharing
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("disclose_caring")
 ```
 
-## ... ENVY
+## ENVY
 
-## ... mechanism unspecified
+### mechanism unspecified
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("hurtwfeelings_envy")
 custom_histo("hurtwthoughts_envy")
 ```
 
-## ... health
+### health
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("healtheffectself_envy")
 ```
 
-## ... via spirit mediation
+### via spirit mediation
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("hurtviaspirit_envy")
@@ -229,14 +254,13 @@ custom_histo("awarespirit_envy")
 custom_histo("disclose_envy")
 ```
 
-
-## ... sharing
+### sharing
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("disclose_envy")
 ```
 
-## general
+### general
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("spiritsusethoughtsharm")
@@ -245,7 +269,7 @@ custom_histo("witchcraft_judge")
 
 # Interiority
 
-## ... sharing
+## sharing
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("socialharmony")
@@ -253,19 +277,19 @@ custom_histo("happyface")
 custom_histo("controlface")
 ```
 
-## ... understanding/reflection
+## understanding/reflection
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("understandthoughts")
 ```
 
-## ... danger
+## danger
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("sharingdangerous")
 ```
 
-## ... talking
+## talking
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("talkabtfeelings")
@@ -281,7 +305,7 @@ custom_histo("controlbody_judge")
 
 # Imagination
 
-## ... child vignettes 
+## child vignettes 
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("choochoo_imagine")
@@ -298,7 +322,6 @@ custom_histo("invisiblefriend_imagine")
 custom_histo("invisiblefriend_encourage")
 ```
 
-
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("childsplayopinion_imagine")
 ```
@@ -313,7 +336,7 @@ custom_histo("adultsscarekids_imagine")
 custom_histo("adultscarekids_encourage")
 ```
 
-## ... cup of tea for God
+## cup of tea for God
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("teaforgod_imagine")
@@ -321,7 +344,7 @@ custom_histo("teaforgod_encourage")
 custom_histo("teaforgod_outcome")
 ```
 
-## ... general
+## general
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("adultsimagineimpossible_import")
@@ -334,7 +357,42 @@ custom_histo("magicalthinking")
 
 # SCID
 
-## ... summary score
+## summary score
+
+```{r, fig.width = 4, fig.asp = 0.6}
+d %>%
+  select(subject_name, country, researcher, urban_rural, charismatic_local, 
+         ends_with("_scid")) %>%
+  gather(question, response, ends_with("_scid")) %>%
+  mutate(response = as.numeric(factor(response,
+                                      levels = c("Not present",
+                                                 "Present but uncertain",
+                                                 "Persuaded of issue")))) %>%
+  group_by(country, researcher, urban_rural, charismatic_local, subject_name) %>%
+  summarise(scid_score = sum(response, na.rm = T)) %>%
+  ungroup() %>%
+  filter(!is.na(scid_score)) %>%
+  group_by(country, researcher, urban_rural, charismatic_local) %>%
+  do(data.frame(rbind(smean.cl.boot(.$scid_score)))) %>%
+  ungroup() %>%
+  ggplot(aes(x = interaction(charismatic_local, urban_rural), 
+             y = Mean, color = researcher)) +
+  facet_grid(~ country, scales = "free", space = "free") +
+  geom_pointrange(aes(ymin = Lower, ymax = Upper)) +
+  geom_text(aes(label = round(Mean, 1), y = Lower), 
+            color = "black", nudge_y = -2, size = 2) +
+  scale_color_manual(values = custom_pal) +
+  scale_y_continuous(limits = c(0, 28)) +
+  labs(title = "Mean responses: total SCID score (range: 0-28)",
+       subtitle = "Error bars are 95% confidence intervals",
+       x = "Score",
+       y = "Count",
+       color = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(fill = guide_legend(ncol = 6, byrow = TRUE))
+```
 
 ```{r, fig.width = 3, fig.asp = 1}
 d %>%
@@ -364,7 +422,7 @@ d %>%
   scale_fill_manual(values = custom_pal) +
   scale_alpha_discrete(guide = "none", range = c(0.5, 1)) +
   labs(title = paste("Distribution of responses:", "scid_score"),
-       subtitle = "Sum of all SCID items (range: 0-16, for now)",
+       subtitle = "Sum of all SCID items (range: 0-28)",
        x = "Score",
        y = "Count",
        fill = "Researcher") +
@@ -374,7 +432,7 @@ d %>%
   guides(fill = guide_legend(ncol = 6, byrow = TRUE))
 ```
 
-## ... individual items
+## individual items
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("specialmessage_scid")
@@ -390,12 +448,18 @@ custom_histo("terribleact_scid")
 custom_histo("alienthought_scid")
 ```
 
-```{r, fig.width = 3, fig.asp = 1, include = F}
-# custom_histo("thoughtstaken_scid")
-# custom_histo("thoughtsbroadcast_scid")
-# custom_histo("hearthings_scid")
-# custom_histo("hearthingsfreq_scid")
-# custom_histo("hearthingscontent_scid")
-# custom_histo("hospitalhx_scid")
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("thoughtstaken_scid")
+custom_histo("thoughtsbroadcast_scid")
+custom_histo("hearthings_scid")
+custom_histo("hearthingscontent_scid")
+custom_histo("hospitalhx_scid")
+```
+
+# Interview judgments
+
+```{r, fig.width = 3, fig.asp = 1}
+custom_histo("imaginationimportantkids_judge")
+custom_histo("imaginationimportantadults_judge")
 ```
 

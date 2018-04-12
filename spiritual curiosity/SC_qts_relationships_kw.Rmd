@@ -1,8 +1,9 @@
 ---
 title: 'QTS data: Spiritual curiosity relationships'
-subtitle: 'Last updated 2018-04-10'
+subtitle: 'Last updated 2018-04-12'
 output:
-  html_notebook: default
+  html_notebook: 
+    toc: true
   html_document:
     df_print: paged
   pdf_document: default
@@ -19,6 +20,7 @@ library(tidyverse)
 library(rms)
 library(knitr)
 library(kableExtra)
+library(ordinal)
 
 # run setup script
 source("/Users/kweisman/Documents/Research (Stanford)/Projects/Templeton Grant/DATA WRANGLING/templeton_qts/scripts/setup_qts_kw.R")
@@ -30,7 +32,992 @@ source("/Users/kweisman/Documents/Research (Stanford)/Projects/Templeton Grant/D
 key <- key_sc
 ```
 
-This is a first-pass exploration of the relationships among QTS data for the "Spiritual curiosity" interview.
+This is a first-pass exploration of some of the relationships among QTS data for the "Spiritual curiosity" interview.
 
-# 
+# Time praying & spiritual experiences
+*Requested by Josh*
 
+## Time praying as indexed by `prayfreqmin`
+_How many minutes each day do you do that on average throughout the week? [use real world examples, ask alone? With others? Probe away-- Answer with interviewer judgement for answers]_
+
+```{r}
+prayfreqmin_count <- d %>%
+  filter(!is.na(prayfreqmin), !is.na(godvoxaloud),
+         prayfreqmin != "Other", godvoxaloud != "Other") %>%
+  count(country, prayfreqmin) %>%
+  data.frame()
+
+prayfreqmin_count_by_quad <- d %>%
+  filter(!is.na(prayfreqmin), !is.na(godvoxaloud),
+         prayfreqmin != "Other", godvoxaloud != "Other") %>%
+  count(country, urban_rural, charismatic_local, prayfreqmin) %>%
+  data.frame()
+```
+
+### Spiritual experiences indexed by `godvoxaloud`
+_Some people say that they have heard God* speak out loud to them. Has this ever happened to you?_
+
+```{r, fig.width = 3, fig.asp = 1}
+d %>%
+  filter(!is.na(prayfreqmin), !is.na(godvoxaloud)) %>% #,
+         # prayfreqmin != "Other", godvoxaloud != "Other") %>%
+  ggplot(aes(x = prayfreqmin, y = godvoxaloud, color = researcher)) +
+  facet_grid(urban_rural ~ charismatic_local ~ country) +
+  geom_point(alpha = 0.3, position = position_jitter(0.2, 0.2)) +
+  scale_color_manual(values = custom_pal) +
+  labs(title = paste("prayfreqmin", "godvoxaloud", sep = " x "),
+       # subtitle = "Excluding people who did not have a clear answer",
+       x = "prayfreqmin",
+       y = "godvoxaloud",
+       color = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(color = guide_legend(ncol = 6, byrow = TRUE, 
+                              override.aes = list(alpha = 1)))
+```
+
+```{r, fig.width = 4, fig.asp = 1}
+d %>%
+  filter(!is.na(prayfreqmin), !is.na(godvoxaloud),
+         prayfreqmin != "Other", godvoxaloud != "Other") %>%
+  ggplot(aes(x = prayfreqmin, alpha = godvoxaloud, fill = researcher)) +
+  facet_grid(urban_rural ~ charismatic_local ~ country) +
+  geom_bar(position = "fill") +
+  geom_text(data = prayfreqmin_count_by_quad,
+            aes(x = prayfreqmin, y = 1, alpha = NULL, fill = NULL,
+                label = paste0("(n=", n, ")")),
+            size = 2, nudge_y = 0.05) +
+  # scale_fill_brewer(guide = NULL, palette = "Dark2") +
+  scale_fill_manual(guide = NULL, values = custom_pal) +
+  scale_alpha_discrete(range = c(0.5, 1)) +
+  scale_y_continuous(breaks = seq(0, 1, 0.25)) +
+  labs(title = paste("prayfreqmin", "godvoxaloud", sep = " x "),
+       subtitle = "Excluding people who did not have a clear answer",
+       x = "prayfreqmin",
+       y = "Proportion",
+       alpha = "godvoxaloud",
+       fill = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(alpha = guide_legend(),
+         fill = "none")
+```
+
+```{r, fig.width = 4, fig.asp = 0.5}
+d %>%
+  filter(!is.na(prayfreqmin), !is.na(godvoxaloud),
+         prayfreqmin != "Other", godvoxaloud != "Other") %>%
+  ggplot(aes(x = prayfreqmin, alpha = godvoxaloud, fill = country)) +
+  facet_grid(. ~ country) +
+  geom_bar(position = "fill") +
+  geom_text(data = prayfreqmin_count,
+            aes(x = prayfreqmin, y = 1, alpha = NULL, fill = NULL,
+                label = paste0("(n=", n, ")")),
+            size = 2, nudge_y = 0.05) +
+  scale_fill_brewer(guide = NULL, palette = "Dark2") +
+  # scale_fill_manual(guide = NULL, values = custom_pal) +
+  scale_alpha_discrete(range = c(0.5, 1)) +
+  scale_y_continuous(breaks = seq(0, 1, 0.25)) +
+  labs(title = paste("prayfreqmin", "godvoxaloud", sep = " x "),
+       subtitle = "Excluding people who did not have a clear answer",
+       x = "prayfreqmin",
+       y = "Proportion",
+       alpha = "godvoxaloud",
+       fill = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(alpha = guide_legend(),
+         fill = "none")
+```
+
+```{r}
+d1 <- d %>%
+  filter(!is.na(prayfreqmin), !is.na(godvoxaloud),
+         prayfreqmin != "Other", godvoxaloud != "Other") %>%
+  mutate(prayfreqmin_num = as.numeric(prayfreqmin) - 1,
+         godvoxaloud = factor(godvoxaloud,
+                               levels = c("No", "Yes")),
+         godvoxaloud_num = as.numeric(godvoxaloud) - 1) %>%
+  select(country, researcher, urban_rural, charismatic_local, subject_name,
+         starts_with("prayfreqmin"), starts_with("godvoxaloud"))
+
+contrasts(d1$country) <- cbind("GH" = c(-1, 1, 0, 0, 0),
+                               "TH" = c(-1, 0, 1, 0, 0),
+                               "CH" = c(-1, 0, 0, 1, 0),
+                               "VT" = c(-1, 0, 0, 0, 1))
+contrasts(d1$prayfreqmin) <- contr.poly(4)
+
+r1 <- glm(godvoxaloud_num ~ prayfreqmin + country,
+                  family = "binomial", data = d1)
+summary(r1)
+```
+
+### Spiritual experiences indexed by `godviavisions`
+_Some people say that they have had a vision from God*—they have a picture, but it is like they see it with their eyes. Has anything like that happened to you?_
+
+```{r, fig.width = 3, fig.asp = 1}
+d %>%
+  filter(!is.na(prayfreqmin), !is.na(godviavisions)) %>% #,
+         # prayfreqmin != "Other", godviavisions != "Other") %>%
+  ggplot(aes(x = prayfreqmin, y = godviavisions, color = researcher)) +
+  facet_grid(urban_rural ~ charismatic_local ~ country) +
+  geom_point(alpha = 0.3, position = position_jitter(0.2, 0.2)) +
+  scale_color_manual(values = custom_pal) +
+  labs(title = paste("prayfreqmin", "godviavisions", sep = " x "),
+       # subtitle = "Excluding people who did not have a clear answer",
+       x = "prayfreqmin",
+       y = "godviavisions",
+       color = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(color = guide_legend(ncol = 6, byrow = TRUE, 
+                              override.aes = list(alpha = 1)))
+```
+
+```{r, fig.width = 4, fig.asp = 1}
+d %>%
+  filter(!is.na(prayfreqmin), !is.na(godviavisions),
+         prayfreqmin != "Other", godviavisions != "Other") %>%
+  ggplot(aes(x = prayfreqmin, alpha = godviavisions, fill = researcher)) +
+  facet_grid(urban_rural ~ charismatic_local ~ country) +
+  geom_bar(position = "fill") +
+  geom_text(data = prayfreqmin_count_by_quad,
+            aes(x = prayfreqmin, y = 1, alpha = NULL, fill = NULL,
+                label = paste0("(n=", n, ")")),
+            size = 2, nudge_y = 0.05) +
+  # scale_fill_brewer(guide = NULL, palette = "Dark2") +
+  scale_fill_manual(guide = NULL, values = custom_pal) +
+  scale_alpha_discrete(range = c(0.5, 1)) +
+  scale_y_continuous(breaks = seq(0, 1, 0.25)) +
+  labs(title = paste("prayfreqmin", "godviavisions", sep = " x "),
+       subtitle = "Excluding people who did not have a clear answer",
+       x = "prayfreqmin",
+       y = "Proportion",
+       alpha = "godviavisions",
+       fill = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(alpha = guide_legend(),
+         fill = "none")
+```
+
+```{r, fig.width = 4, fig.asp = 0.5}
+d %>%
+  filter(!is.na(prayfreqmin), !is.na(godviavisions),
+         prayfreqmin != "Other", godviavisions != "Other") %>%
+  ggplot(aes(x = prayfreqmin, alpha = godviavisions, fill = country)) +
+  facet_grid(. ~ country) +
+  geom_bar(position = "fill") +
+  geom_text(data = prayfreqmin_count,
+            aes(x = prayfreqmin, y = 1, alpha = NULL, fill = NULL,
+                label = paste0("(n=", n, ")")),
+            size = 2, nudge_y = 0.05) +
+  scale_fill_brewer(guide = NULL, palette = "Dark2") +
+  # scale_fill_manual(guide = NULL, values = custom_pal) +
+  scale_alpha_discrete(range = c(0.5, 1)) +
+  scale_y_continuous(breaks = seq(0, 1, 0.25)) +
+  labs(title = paste("prayfreqmin", "godviavisions", sep = " x "),
+       subtitle = "Excluding people who did not have a clear answer",
+       x = "prayfreqmin",
+       y = "Proportion",
+       alpha = "godviavisions",
+       fill = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(alpha = guide_legend(),
+         fill = "none")
+```
+
+```{r}
+d2 <- d %>%
+  filter(!is.na(prayfreqmin), !is.na(godviavisions),
+         prayfreqmin != "Other", godviavisions != "Other") %>%
+  mutate(prayfreqmin_num = as.numeric(prayfreqmin) - 1,
+         godviavisions = factor(godviavisions,
+                               levels = c("No", "Yes")),
+         godviavisions_num = as.numeric(godviavisions) - 1) %>%
+  select(country, researcher, urban_rural, charismatic_local, subject_name,
+         starts_with("prayfreqmin"), starts_with("godviavisions"))
+
+contrasts(d2$country) <- cbind("GH" = c(-1, 1, 0, 0, 0),
+                               "TH" = c(-1, 0, 1, 0, 0),
+                               "CH" = c(-1, 0, 0, 1, 0),
+                               "VT" = c(-1, 0, 0, 0, 1))
+contrasts(d2$prayfreqmin) <- contr.poly(4)
+
+r2 <- glm(godviavisions_num ~ prayfreqmin + country,
+                  family = "binomial", data = d2)
+summary(r2)
+```
+
+### Spiritual experiences indexed by `godviabodyexperiences`
+_Some people have particular experiences in your body that they associate with God* or spirit. Does that happen for you? [examples: warm hands, goosebumps, fire in the belly]_
+
+```{r, fig.width = 3, fig.asp = 1}
+d %>%
+  filter(!is.na(prayfreqmin), !is.na(godviabodyexperiences)) %>% #,
+         # prayfreqmin != "Other", godviabodyexperiences != "Other") %>%
+  ggplot(aes(x = prayfreqmin, y = godviabodyexperiences, color = researcher)) +
+  facet_grid(urban_rural ~ charismatic_local ~ country) +
+  geom_point(alpha = 0.3, position = position_jitter(0.2, 0.2)) +
+  scale_color_manual(values = custom_pal) +
+  labs(title = paste("prayfreqmin", "godviabodyexperiences", sep = " x "),
+       # subtitle = "Excluding people who did not have a clear answer",
+       x = "prayfreqmin",
+       y = "godviabodyexperiences",
+       color = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(color = guide_legend(ncol = 6, byrow = TRUE, 
+                              override.aes = list(alpha = 1)))
+```
+
+```{r, fig.width = 4, fig.asp = 1}
+d %>%
+  filter(!is.na(prayfreqmin), !is.na(godviabodyexperiences),
+         prayfreqmin != "Other", godviabodyexperiences != "Other") %>%
+  ggplot(aes(x = prayfreqmin, alpha = godviabodyexperiences, fill = researcher)) +
+  facet_grid(urban_rural ~ charismatic_local ~ country) +
+  geom_bar(position = "fill") +
+  geom_text(data = prayfreqmin_count_by_quad,
+            aes(x = prayfreqmin, y = 1, alpha = NULL, fill = NULL,
+                label = paste0("(n=", n, ")")),
+            size = 2, nudge_y = 0.05) +
+  # scale_fill_brewer(guide = NULL, palette = "Dark2") +
+  scale_fill_manual(guide = NULL, values = custom_pal) +
+  scale_alpha_discrete(range = c(0.5, 1)) +
+  scale_y_continuous(breaks = seq(0, 1, 0.25)) +
+  labs(title = paste("prayfreqmin", "godviabodyexperiences", sep = " x "),
+       subtitle = "Excluding people who did not have a clear answer",
+       x = "prayfreqmin",
+       y = "Proportion",
+       alpha = "godviabodyexperiences",
+       fill = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(alpha = guide_legend(),
+         fill = "none")
+```
+
+```{r, fig.width = 4, fig.asp = 0.5}
+d %>%
+  filter(!is.na(prayfreqmin), !is.na(godviabodyexperiences),
+         prayfreqmin != "Other", godviabodyexperiences != "Other") %>%
+  ggplot(aes(x = prayfreqmin, alpha = godviabodyexperiences, fill = country)) +
+  facet_grid(. ~ country) +
+  geom_bar(position = "fill") +
+  geom_text(data = prayfreqmin_count,
+            aes(x = prayfreqmin, y = 1, alpha = NULL, fill = NULL,
+                label = paste0("(n=", n, ")")),
+            size = 2, nudge_y = 0.05) +
+  scale_fill_brewer(guide = NULL, palette = "Dark2") +
+  # scale_fill_manual(guide = NULL, values = custom_pal) +
+  scale_alpha_discrete(range = c(0.5, 1)) +
+  scale_y_continuous(breaks = seq(0, 1, 0.25)) +
+  labs(title = paste("prayfreqmin", "godviabodyexperiences", sep = " x "),
+       subtitle = "Excluding people who did not have a clear answer",
+       x = "prayfreqmin",
+       y = "Proportion",
+       alpha = "godviabodyexperiences",
+       fill = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(alpha = guide_legend(),
+         fill = "none")
+```
+
+```{r}
+d3 <- d %>%
+  filter(!is.na(prayfreqmin), !is.na(godviabodyexperiences),
+         prayfreqmin != "Other", godviabodyexperiences != "Other") %>%
+  mutate(prayfreqmin_num = as.numeric(prayfreqmin) - 1,
+         godviabodyexperiences = factor(godviabodyexperiences,
+                               levels = c("No", "Yes")),
+         godviabodyexperiences_num = as.numeric(godviabodyexperiences) - 1) %>%
+  select(country, researcher, urban_rural, charismatic_local, subject_name,
+         starts_with("prayfreqmin"), starts_with("godviabodyexperiences"))
+
+contrasts(d3$country) <- cbind("GH" = c(-1, 1, 0, 0, 0),
+                               "TH" = c(-1, 0, 1, 0, 0),
+                               "CH" = c(-1, 0, 0, 1, 0),
+                               "VT" = c(-1, 0, 0, 0, 1))
+contrasts(d3$prayfreqmin) <- contr.poly(4)
+
+r3 <- glm(godviabodyexperiences_num ~ prayfreqmin + country,
+                  family = "binomial", data = d3)
+summary(r3)
+```
+
+# Doubt & external sensory experiences
+*Requested by Emily, John*
+
+## "Doubt" indxed by `selfunsuregodreal`
+
+_Has there been a time when you yourself wondered whether God* was real?_
+
+```{r}
+selfunsuregodreal_count <- d %>%
+  filter(!is.na(selfunsuregodreal), !is.na(godvoxaloud),
+         selfunsuregodreal != "Other", godvoxaloud != "Other") %>%
+  count(country, selfunsuregodreal) %>%
+  data.frame()
+
+selfunsuregodreal_count_by_quad <- d %>%
+  filter(!is.na(selfunsuregodreal), !is.na(godvoxaloud),
+         selfunsuregodreal != "Other", godvoxaloud != "Other") %>%
+  count(country, urban_rural, charismatic_local, selfunsuregodreal) %>%
+  data.frame()
+```
+
+### Spiritual experiences indexed by `godvoxaloud`
+_Some people say that they have heard God* speak out loud to them. Has this ever happened to you?_
+
+```{r, fig.width = 3, fig.asp = 1}
+d %>%
+  filter(!is.na(selfunsuregodreal), !is.na(godvoxaloud)) %>% #,
+         # selfunsuregodreal != "Other", godvoxaloud != "Other") %>%
+  ggplot(aes(x = selfunsuregodreal, y = godvoxaloud, color = researcher)) +
+  facet_grid(urban_rural ~ charismatic_local ~ country) +
+  geom_point(alpha = 0.3, position = position_jitter(0.2, 0.2)) +
+  scale_color_manual(values = custom_pal) +
+  labs(title = paste("selfunsuregodreal", "godvoxaloud", sep = " x "),
+       # subtitle = "Excluding people who did not have a clear answer",
+       x = "selfunsuregodreal",
+       y = "godvoxaloud",
+       color = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(color = guide_legend(ncol = 6, byrow = TRUE, 
+                              override.aes = list(alpha = 1)))
+```
+
+```{r, fig.width = 4, fig.asp = 1}
+d %>%
+  filter(!is.na(selfunsuregodreal), !is.na(godvoxaloud),
+         selfunsuregodreal != "Other", godvoxaloud != "Other") %>%
+  ggplot(aes(x = selfunsuregodreal, alpha = godvoxaloud, fill = researcher)) +
+  facet_grid(urban_rural ~ charismatic_local ~ country) +
+  geom_bar(position = "fill") +
+  geom_text(data = selfunsuregodreal_count_by_quad,
+            aes(x = selfunsuregodreal, y = 1, alpha = NULL, fill = NULL,
+                label = paste0("(n=", n, ")")),
+            size = 2, nudge_y = 0.05) +
+  # scale_fill_brewer(guide = NULL, palette = "Dark2") +
+  scale_fill_manual(guide = NULL, values = custom_pal) +
+  scale_alpha_discrete(range = c(0.5, 1)) +
+  scale_y_continuous(breaks = seq(0, 1, 0.25)) +
+  labs(title = paste("selfunsuregodreal", "godvoxaloud", sep = " x "),
+       subtitle = "Excluding people who did not have a clear answer",
+       x = "selfunsuregodreal",
+       y = "Proportion",
+       alpha = "godvoxaloud",
+       fill = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(alpha = guide_legend(),
+         fill = "none")
+```
+
+```{r, fig.width = 4, fig.asp = 0.5}
+d %>%
+  filter(!is.na(selfunsuregodreal), !is.na(godvoxaloud),
+         selfunsuregodreal != "Other", godvoxaloud != "Other") %>%
+  ggplot(aes(x = selfunsuregodreal, alpha = godvoxaloud, fill = country)) +
+  facet_grid(. ~ country) +
+  geom_bar(position = "fill") +
+  geom_text(data = selfunsuregodreal_count,
+            aes(x = selfunsuregodreal, y = 1, alpha = NULL, fill = NULL,
+                label = paste0("(n=", n, ")")),
+            size = 2, nudge_y = 0.05) +
+  scale_fill_brewer(guide = NULL, palette = "Dark2") +
+  # scale_fill_manual(guide = NULL, values = custom_pal) +
+  scale_alpha_discrete(range = c(0.5, 1)) +
+  scale_y_continuous(breaks = seq(0, 1, 0.25)) +
+  labs(title = paste("selfunsuregodreal", "godvoxaloud", sep = " x "),
+       subtitle = "Excluding people who did not have a clear answer",
+       x = "selfunsuregodreal",
+       y = "Proportion",
+       alpha = "godvoxaloud",
+       fill = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(alpha = guide_legend(),
+         fill = "none")
+```
+
+```{r}
+d4 <- d %>%
+  filter(!is.na(selfunsuregodreal), !is.na(godvoxaloud),
+         selfunsuregodreal != "Other", godvoxaloud != "Other",
+         selfunsuregodreal != "Maybe") %>%
+  mutate(selfunsuregodreal = factor(selfunsuregodreal,
+                                    levels = c("No", "Yes")),
+         selfunsuregodreal_num = as.numeric(selfunsuregodreal) - 1,
+         godvoxaloud = factor(godvoxaloud,
+                               levels = c("No", "Yes")),
+         godvoxaloud_num = as.numeric(godvoxaloud) - 1) %>%
+  select(country, researcher, urban_rural, charismatic_local, subject_name,
+         starts_with("selfunsuregodreal"), starts_with("godvoxaloud"))
+
+contrasts(d4$country) <- cbind("GH" = c(-1, 1, 0, 0, 0),
+                               "TH" = c(-1, 0, 1, 0, 0),
+                               "CH" = c(-1, 0, 0, 1, 0),
+                               "VT" = c(-1, 0, 0, 0, 1))
+contrasts(d4$selfunsuregodreal) <- cbind("Y" = c(-1, 1))
+
+r4 <- glm(godvoxaloud_num ~ selfunsuregodreal + country,
+                  family = "binomial", data = d4)
+summary(r4)
+```
+
+### Spiritual experiences indexed by `godviavisions`
+_Some people say that they have had a vision from God*—they have a picture, but it is like they see it with their eyes. Has anything like that happened to you?_
+
+```{r, fig.width = 3, fig.asp = 1}
+d %>%
+  filter(!is.na(selfunsuregodreal), !is.na(godviavisions)) %>% #,
+         # selfunsuregodreal != "Other", godviavisions != "Other") %>%
+  ggplot(aes(x = selfunsuregodreal, y = godviavisions, color = researcher)) +
+  facet_grid(urban_rural ~ charismatic_local ~ country) +
+  geom_point(alpha = 0.3, position = position_jitter(0.2, 0.2)) +
+  scale_color_manual(values = custom_pal) +
+  labs(title = paste("selfunsuregodreal", "godviavisions", sep = " x "),
+       # subtitle = "Excluding people who did not have a clear answer",
+       x = "selfunsuregodreal",
+       y = "godviavisions",
+       color = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(color = guide_legend(ncol = 6, byrow = TRUE, 
+                              override.aes = list(alpha = 1)))
+```
+
+```{r, fig.width = 4, fig.asp = 1}
+d %>%
+  filter(!is.na(selfunsuregodreal), !is.na(godviavisions),
+         selfunsuregodreal != "Other", godviavisions != "Other") %>%
+  ggplot(aes(x = selfunsuregodreal, alpha = godviavisions, fill = researcher)) +
+  facet_grid(urban_rural ~ charismatic_local ~ country) +
+  geom_bar(position = "fill") +
+  geom_text(data = selfunsuregodreal_count_by_quad,
+            aes(x = selfunsuregodreal, y = 1, alpha = NULL, fill = NULL,
+                label = paste0("(n=", n, ")")),
+            size = 2, nudge_y = 0.05) +
+  # scale_fill_brewer(guide = NULL, palette = "Dark2") +
+  scale_fill_manual(guide = NULL, values = custom_pal) +
+  scale_alpha_discrete(range = c(0.5, 1)) +
+  scale_y_continuous(breaks = seq(0, 1, 0.25)) +
+  labs(title = paste("selfunsuregodreal", "godviavisions", sep = " x "),
+       subtitle = "Excluding people who did not have a clear answer",
+       x = "selfunsuregodreal",
+       y = "Proportion",
+       alpha = "godviavisions",
+       fill = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(alpha = guide_legend(),
+         fill = "none")
+```
+
+```{r, fig.width = 4, fig.asp = 0.5}
+d %>%
+  filter(!is.na(selfunsuregodreal), !is.na(godviavisions),
+         selfunsuregodreal != "Other", godviavisions != "Other") %>%
+  ggplot(aes(x = selfunsuregodreal, alpha = godviavisions, fill = country)) +
+  facet_grid(. ~ country) +
+  geom_bar(position = "fill") +
+  geom_text(data = selfunsuregodreal_count,
+            aes(x = selfunsuregodreal, y = 1, alpha = NULL, fill = NULL,
+                label = paste0("(n=", n, ")")),
+            size = 2, nudge_y = 0.05) +
+  scale_fill_brewer(guide = NULL, palette = "Dark2") +
+  # scale_fill_manual(guide = NULL, values = custom_pal) +
+  scale_alpha_discrete(range = c(0.5, 1)) +
+  scale_y_continuous(breaks = seq(0, 1, 0.25)) +
+  labs(title = paste("selfunsuregodreal", "godviavisions", sep = " x "),
+       subtitle = "Excluding people who did not have a clear answer",
+       x = "selfunsuregodreal",
+       y = "Proportion",
+       alpha = "godviavisions",
+       fill = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(alpha = guide_legend(),
+         fill = "none")
+```
+
+```{r}
+d5 <- d %>%
+  filter(!is.na(selfunsuregodreal), !is.na(godviavisions),
+         selfunsuregodreal != "Other", godviavisions != "Other",
+         selfunsuregodreal != "Maybe") %>%
+  mutate(selfunsuregodreal = factor(selfunsuregodreal,
+                                    levels = c("No", "Yes")),
+         selfunsuregodreal_num = as.numeric(selfunsuregodreal) - 1,
+         godviavisions = factor(godviavisions,
+                               levels = c("No", "Yes")),
+         godviavisions_num = as.numeric(godviavisions) - 1) %>%
+  select(country, researcher, urban_rural, charismatic_local, subject_name,
+         starts_with("selfunsuregodreal"), starts_with("godviavisions"))
+
+contrasts(d5$country) <- cbind("GH" = c(-1, 1, 0, 0, 0),
+                               "TH" = c(-1, 0, 1, 0, 0),
+                               "CH" = c(-1, 0, 0, 1, 0),
+                               "VT" = c(-1, 0, 0, 0, 1))
+contrasts(d5$selfunsuregodreal) <- cbind("Y" = c(-1, 1))
+
+r5 <- glm(godviavisions_num ~ selfunsuregodreal + country,
+                  family = "binomial", data = d5)
+summary(r5)
+```
+
+### Spiritual experiences indexed by `godviabodyexperiences`
+_Some people have particular experiences in your body that they associate with God* or spirit. Does that happen for you? [examples: warm hands, goosebumps, fire in the belly]_
+
+```{r, fig.width = 3, fig.asp = 1}
+d %>%
+  filter(!is.na(selfunsuregodreal), !is.na(godviabodyexperiences)) %>% #,
+         # selfunsuregodreal != "Other", godviabodyexperiences != "Other") %>%
+  ggplot(aes(x = selfunsuregodreal, y = godviabodyexperiences, color = researcher)) +
+  facet_grid(urban_rural ~ charismatic_local ~ country) +
+  geom_point(alpha = 0.3, position = position_jitter(0.2, 0.2)) +
+  scale_color_manual(values = custom_pal) +
+  labs(title = paste("selfunsuregodreal", "godviabodyexperiences", sep = " x "),
+       # subtitle = "Excluding people who did not have a clear answer",
+       x = "selfunsuregodreal",
+       y = "godviabodyexperiences",
+       color = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(color = guide_legend(ncol = 6, byrow = TRUE, 
+                              override.aes = list(alpha = 1)))
+```
+
+```{r, fig.width = 4, fig.asp = 1}
+d %>%
+  filter(!is.na(selfunsuregodreal), !is.na(godviabodyexperiences),
+         selfunsuregodreal != "Other", godviabodyexperiences != "Other") %>%
+  ggplot(aes(x = selfunsuregodreal, alpha = godviabodyexperiences, fill = researcher)) +
+  facet_grid(urban_rural ~ charismatic_local ~ country) +
+  geom_bar(position = "fill") +
+  geom_text(data = selfunsuregodreal_count_by_quad,
+            aes(x = selfunsuregodreal, y = 1, alpha = NULL, fill = NULL,
+                label = paste0("(n=", n, ")")),
+            size = 2, nudge_y = 0.05) +
+  # scale_fill_brewer(guide = NULL, palette = "Dark2") +
+  scale_fill_manual(guide = NULL, values = custom_pal) +
+  scale_alpha_discrete(range = c(0.5, 1)) +
+  scale_y_continuous(breaks = seq(0, 1, 0.25)) +
+  labs(title = paste("selfunsuregodreal", "godviabodyexperiences", sep = " x "),
+       subtitle = "Excluding people who did not have a clear answer",
+       x = "selfunsuregodreal",
+       y = "Proportion",
+       alpha = "godviabodyexperiences",
+       fill = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(alpha = guide_legend(),
+         fill = "none")
+```
+
+```{r, fig.width = 4, fig.asp = 0.5}
+d %>%
+  filter(!is.na(selfunsuregodreal), !is.na(godviabodyexperiences),
+         selfunsuregodreal != "Other", godviabodyexperiences != "Other") %>%
+  ggplot(aes(x = selfunsuregodreal, alpha = godviabodyexperiences, fill = country)) +
+  facet_grid(. ~ country) +
+  geom_bar(position = "fill") +
+  geom_text(data = selfunsuregodreal_count,
+            aes(x = selfunsuregodreal, y = 1, alpha = NULL, fill = NULL,
+                label = paste0("(n=", n, ")")),
+            size = 2, nudge_y = 0.05) +
+  scale_fill_brewer(guide = NULL, palette = "Dark2") +
+  # scale_fill_manual(guide = NULL, values = custom_pal) +
+  scale_alpha_discrete(range = c(0.5, 1)) +
+  scale_y_continuous(breaks = seq(0, 1, 0.25)) +
+  labs(title = paste("selfunsuregodreal", "godviabodyexperiences", sep = " x "),
+       subtitle = "Excluding people who did not have a clear answer",
+       x = "selfunsuregodreal",
+       y = "Proportion",
+       alpha = "godviabodyexperiences",
+       fill = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(alpha = guide_legend(),
+         fill = "none")
+```
+
+```{r}
+d6 <- d %>%
+  filter(!is.na(selfunsuregodreal), !is.na(godviabodyexperiences),
+         selfunsuregodreal != "Other", godviabodyexperiences != "Other",
+         selfunsuregodreal != "Maybe") %>%
+  mutate(selfunsuregodreal = factor(selfunsuregodreal,
+                                    levels = c("No", "Yes")),
+         selfunsuregodreal_num = as.numeric(selfunsuregodreal) - 1,
+         godviabodyexperiences = factor(godviabodyexperiences,
+                               levels = c("No", "Yes")),
+         godviabodyexperiences_num = as.numeric(godviabodyexperiences) - 1) %>%
+  select(country, researcher, urban_rural, charismatic_local, subject_name,
+         starts_with("selfunsuregodreal"), starts_with("godviabodyexperiences"))
+
+contrasts(d6$country) <- cbind("GH" = c(-1, 1, 0, 0, 0),
+                               "TH" = c(-1, 0, 1, 0, 0),
+                               "CH" = c(-1, 0, 0, 1, 0),
+                               "VT" = c(-1, 0, 0, 0, 1))
+contrasts(d6$selfunsuregodreal) <- cbind("Y" = c(-1, 1))
+
+r6 <- glm(godviabodyexperiences_num ~ selfunsuregodreal + country,
+                  family = "binomial", data = d6)
+summary(r6)
+```
+
+## "Doubt" indxed by `morequesmoreanswr`
+
+_Do you think that the more spiritually mature you become, you will discover more questions or more answers?_
+
+```{r}
+morequesmoreanswr_count <- d %>%
+  filter(!is.na(morequesmoreanswr), !is.na(godvoxaloud),
+         morequesmoreanswr != "Other", godvoxaloud != "Other") %>%
+  count(country, morequesmoreanswr) %>%
+  data.frame()
+
+morequesmoreanswr_count_by_quad <- d %>%
+  filter(!is.na(morequesmoreanswr), !is.na(godvoxaloud),
+         morequesmoreanswr != "Other", godvoxaloud != "Other") %>%
+  count(country, urban_rural, charismatic_local, morequesmoreanswr) %>%
+  data.frame()
+```
+
+### Spiritual experiences indexed by `godvoxaloud`
+_Some people say that they have heard God* speak out loud to them. Has this ever happened to you?_
+
+```{r, fig.width = 3, fig.asp = 1}
+d %>%
+  filter(!is.na(morequesmoreanswr), !is.na(godvoxaloud)) %>% #,
+         # morequesmoreanswr != "Other", godvoxaloud != "Other") %>%
+  ggplot(aes(x = morequesmoreanswr, y = godvoxaloud, color = researcher)) +
+  facet_grid(urban_rural ~ charismatic_local ~ country) +
+  geom_point(alpha = 0.3, position = position_jitter(0.2, 0.2)) +
+  scale_color_manual(values = custom_pal) +
+  labs(title = paste("morequesmoreanswr", "godvoxaloud", sep = " x "),
+       # subtitle = "Excluding people who did not have a clear answer",
+       x = "morequesmoreanswr",
+       y = "godvoxaloud",
+       color = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(color = guide_legend(ncol = 6, byrow = TRUE, 
+                              override.aes = list(alpha = 1)))
+```
+
+```{r, fig.width = 4, fig.asp = 1}
+d %>%
+  filter(!is.na(morequesmoreanswr), !is.na(godvoxaloud),
+         morequesmoreanswr != "Other", godvoxaloud != "Other") %>%
+  ggplot(aes(x = morequesmoreanswr, alpha = godvoxaloud, fill = researcher)) +
+  facet_grid(urban_rural ~ charismatic_local ~ country) +
+  geom_bar(position = "fill") +
+  geom_text(data = morequesmoreanswr_count_by_quad,
+            aes(x = morequesmoreanswr, y = 1, alpha = NULL, fill = NULL,
+                label = paste0("(n=", n, ")")),
+            size = 2, nudge_y = 0.05) +
+  # scale_fill_brewer(guide = NULL, palette = "Dark2") +
+  scale_fill_manual(guide = NULL, values = custom_pal) +
+  scale_alpha_discrete(range = c(0.5, 1)) +
+  scale_y_continuous(breaks = seq(0, 1, 0.25)) +
+  labs(title = paste("morequesmoreanswr", "godvoxaloud", sep = " x "),
+       subtitle = "Excluding people who did not have a clear answer",
+       x = "morequesmoreanswr",
+       y = "Proportion",
+       alpha = "godvoxaloud",
+       fill = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(alpha = guide_legend(),
+         fill = "none")
+```
+
+```{r, fig.width = 4, fig.asp = 0.5}
+d %>%
+  filter(!is.na(morequesmoreanswr), !is.na(godvoxaloud),
+         morequesmoreanswr != "Other", godvoxaloud != "Other") %>%
+  ggplot(aes(x = morequesmoreanswr, alpha = godvoxaloud, fill = country)) +
+  facet_grid(. ~ country) +
+  geom_bar(position = "fill") +
+  geom_text(data = morequesmoreanswr_count,
+            aes(x = morequesmoreanswr, y = 1, alpha = NULL, fill = NULL,
+                label = paste0("(n=", n, ")")),
+            size = 2, nudge_y = 0.05) +
+  scale_fill_brewer(guide = NULL, palette = "Dark2") +
+  # scale_fill_manual(guide = NULL, values = custom_pal) +
+  scale_alpha_discrete(range = c(0.5, 1)) +
+  scale_y_continuous(breaks = seq(0, 1, 0.25)) +
+  labs(title = paste("morequesmoreanswr", "godvoxaloud", sep = " x "),
+       subtitle = "Excluding people who did not have a clear answer",
+       x = "morequesmoreanswr",
+       y = "Proportion",
+       alpha = "godvoxaloud",
+       fill = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(alpha = guide_legend(),
+         fill = "none")
+```
+
+```{r}
+d7 <- d %>%
+  filter(!is.na(morequesmoreanswr), !is.na(godvoxaloud),
+         morequesmoreanswr != "Other", godvoxaloud != "Other") %>%
+  mutate(morequesmoreanswr = factor(morequesmoreanswr),
+         morequesmoreanswr_num = as.numeric(morequesmoreanswr) - 1,
+         godvoxaloud = factor(godvoxaloud,
+                               levels = c("No", "Yes")),
+         godvoxaloud_num = as.numeric(godvoxaloud) - 1) %>%
+  select(country, researcher, urban_rural, charismatic_local, subject_name,
+         starts_with("morequesmoreanswr"), starts_with("godvoxaloud"))
+
+contrasts(d7$country) <- cbind("GH" = c(-1, 1, 0, 0, 0),
+                               "TH" = c(-1, 0, 1, 0, 0),
+                               "CH" = c(-1, 0, 0, 1, 0),
+                               "VT" = c(-1, 0, 0, 0, 1))
+contrasts(d7$morequesmoreanswr) <- cbind("Q" = c(1, -1))
+
+r7 <- glm(godvoxaloud_num ~ morequesmoreanswr + country,
+                  family = "binomial", data = d7)
+summary(r7)
+```
+
+### Spiritual experiences indexed by `godviavisions`
+_Some people say that they have had a vision from God*—they have a picture, but it is like they see it with their eyes. Has anything like that happened to you?_
+
+```{r, fig.width = 3, fig.asp = 1}
+d %>%
+  filter(!is.na(morequesmoreanswr), !is.na(godviavisions)) %>% #,
+         # morequesmoreanswr != "Other", godviavisions != "Other") %>%
+  ggplot(aes(x = morequesmoreanswr, y = godviavisions, color = researcher)) +
+  facet_grid(urban_rural ~ charismatic_local ~ country) +
+  geom_point(alpha = 0.3, position = position_jitter(0.2, 0.2)) +
+  scale_color_manual(values = custom_pal) +
+  labs(title = paste("morequesmoreanswr", "godviavisions", sep = " x "),
+       # subtitle = "Excluding people who did not have a clear answer",
+       x = "morequesmoreanswr",
+       y = "godviavisions",
+       color = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(color = guide_legend(ncol = 6, byrow = TRUE, 
+                              override.aes = list(alpha = 1)))
+```
+
+```{r, fig.width = 4, fig.asp = 1}
+d %>%
+  filter(!is.na(morequesmoreanswr), !is.na(godviavisions),
+         morequesmoreanswr != "Other", godviavisions != "Other") %>%
+  ggplot(aes(x = morequesmoreanswr, alpha = godviavisions, fill = researcher)) +
+  facet_grid(urban_rural ~ charismatic_local ~ country) +
+  geom_bar(position = "fill") +
+  geom_text(data = morequesmoreanswr_count_by_quad,
+            aes(x = morequesmoreanswr, y = 1, alpha = NULL, fill = NULL,
+                label = paste0("(n=", n, ")")),
+            size = 2, nudge_y = 0.05) +
+  # scale_fill_brewer(guide = NULL, palette = "Dark2") +
+  scale_fill_manual(guide = NULL, values = custom_pal) +
+  scale_alpha_discrete(range = c(0.5, 1)) +
+  scale_y_continuous(breaks = seq(0, 1, 0.25)) +
+  labs(title = paste("morequesmoreanswr", "godviavisions", sep = " x "),
+       subtitle = "Excluding people who did not have a clear answer",
+       x = "morequesmoreanswr",
+       y = "Proportion",
+       alpha = "godviavisions",
+       fill = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(alpha = guide_legend(),
+         fill = "none")
+```
+
+```{r, fig.width = 4, fig.asp = 0.5}
+d %>%
+  filter(!is.na(morequesmoreanswr), !is.na(godviavisions),
+         morequesmoreanswr != "Other", godviavisions != "Other") %>%
+  ggplot(aes(x = morequesmoreanswr, alpha = godviavisions, fill = country)) +
+  facet_grid(. ~ country) +
+  geom_bar(position = "fill") +
+  geom_text(data = morequesmoreanswr_count,
+            aes(x = morequesmoreanswr, y = 1, alpha = NULL, fill = NULL,
+                label = paste0("(n=", n, ")")),
+            size = 2, nudge_y = 0.05) +
+  scale_fill_brewer(guide = NULL, palette = "Dark2") +
+  # scale_fill_manual(guide = NULL, values = custom_pal) +
+  scale_alpha_discrete(range = c(0.5, 1)) +
+  scale_y_continuous(breaks = seq(0, 1, 0.25)) +
+  labs(title = paste("morequesmoreanswr", "godviavisions", sep = " x "),
+       subtitle = "Excluding people who did not have a clear answer",
+       x = "morequesmoreanswr",
+       y = "Proportion",
+       alpha = "godviavisions",
+       fill = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(alpha = guide_legend(),
+         fill = "none")
+```
+
+```{r}
+d8 <- d %>%
+  filter(!is.na(morequesmoreanswr), !is.na(godviavisions),
+         morequesmoreanswr != "Other", godviavisions != "Other") %>%
+  mutate(morequesmoreanswr = factor(morequesmoreanswr),
+         morequesmoreanswr_num = as.numeric(morequesmoreanswr) - 1,
+         godviavisions = factor(godviavisions,
+                               levels = c("No", "Yes")),
+         godviavisions_num = as.numeric(godviavisions) - 1) %>%
+  select(country, researcher, urban_rural, charismatic_local, subject_name,
+         starts_with("morequesmoreanswr"), starts_with("godviavisions"))
+
+contrasts(d8$country) <- cbind("GH" = c(-1, 1, 0, 0, 0),
+                               "TH" = c(-1, 0, 1, 0, 0),
+                               "CH" = c(-1, 0, 0, 1, 0),
+                               "VT" = c(-1, 0, 0, 0, 1))
+contrasts(d8$morequesmoreanswr) <- cbind("Q" = c(1, -1))
+
+r8 <- glm(godviavisions_num ~ morequesmoreanswr + country,
+                  family = "binomial", data = d8)
+summary(r8)
+```
+
+### Spiritual experiences indexed by `godviabodyexperiences`
+_Some people have particular experiences in your body that they associate with God* or spirit. Does that happen for you? [examples: warm hands, goosebumps, fire in the belly]_
+
+```{r, fig.width = 3, fig.asp = 1}
+d %>%
+  filter(!is.na(morequesmoreanswr), !is.na(godviabodyexperiences)) %>% #,
+         # morequesmoreanswr != "Other", godviabodyexperiences != "Other") %>%
+  ggplot(aes(x = morequesmoreanswr, y = godviabodyexperiences, color = researcher)) +
+  facet_grid(urban_rural ~ charismatic_local ~ country) +
+  geom_point(alpha = 0.3, position = position_jitter(0.2, 0.2)) +
+  scale_color_manual(values = custom_pal) +
+  labs(title = paste("morequesmoreanswr", "godviabodyexperiences", sep = " x "),
+       # subtitle = "Excluding people who did not have a clear answer",
+       x = "morequesmoreanswr",
+       y = "godviabodyexperiences",
+       color = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(color = guide_legend(ncol = 6, byrow = TRUE, 
+                              override.aes = list(alpha = 1)))
+```
+
+```{r, fig.width = 4, fig.asp = 1}
+d %>%
+  filter(!is.na(morequesmoreanswr), !is.na(godviabodyexperiences),
+         morequesmoreanswr != "Other", godviabodyexperiences != "Other") %>%
+  ggplot(aes(x = morequesmoreanswr, alpha = godviabodyexperiences, fill = researcher)) +
+  facet_grid(urban_rural ~ charismatic_local ~ country) +
+  geom_bar(position = "fill") +
+  geom_text(data = morequesmoreanswr_count_by_quad,
+            aes(x = morequesmoreanswr, y = 1, alpha = NULL, fill = NULL,
+                label = paste0("(n=", n, ")")),
+            size = 2, nudge_y = 0.05) +
+  # scale_fill_brewer(guide = NULL, palette = "Dark2") +
+  scale_fill_manual(guide = NULL, values = custom_pal) +
+  scale_alpha_discrete(range = c(0.5, 1)) +
+  scale_y_continuous(breaks = seq(0, 1, 0.25)) +
+  labs(title = paste("morequesmoreanswr", "godviabodyexperiences", sep = " x "),
+       subtitle = "Excluding people who did not have a clear answer",
+       x = "morequesmoreanswr",
+       y = "Proportion",
+       alpha = "godviabodyexperiences",
+       fill = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(alpha = guide_legend(),
+         fill = "none")
+```
+
+```{r, fig.width = 4, fig.asp = 0.5}
+d %>%
+  filter(!is.na(morequesmoreanswr), !is.na(godviabodyexperiences),
+         morequesmoreanswr != "Other", godviabodyexperiences != "Other") %>%
+  ggplot(aes(x = morequesmoreanswr, alpha = godviabodyexperiences, fill = country)) +
+  facet_grid(. ~ country) +
+  geom_bar(position = "fill") +
+  geom_text(data = morequesmoreanswr_count,
+            aes(x = morequesmoreanswr, y = 1, alpha = NULL, fill = NULL,
+                label = paste0("(n=", n, ")")),
+            size = 2, nudge_y = 0.05) +
+  scale_fill_brewer(guide = NULL, palette = "Dark2") +
+  # scale_fill_manual(guide = NULL, values = custom_pal) +
+  scale_alpha_discrete(range = c(0.5, 1)) +
+  scale_y_continuous(breaks = seq(0, 1, 0.25)) +
+  labs(title = paste("morequesmoreanswr", "godviabodyexperiences", sep = " x "),
+       subtitle = "Excluding people who did not have a clear answer",
+       x = "morequesmoreanswr",
+       y = "Proportion",
+       alpha = "godviabodyexperiences",
+       fill = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(alpha = guide_legend(),
+         fill = "none")
+```
+
+```{r}
+d9 <- d %>%
+  filter(!is.na(morequesmoreanswr), !is.na(godviabodyexperiences),
+         morequesmoreanswr != "Other", godviabodyexperiences != "Other") %>%
+  mutate(morequesmoreanswr = factor(morequesmoreanswr),
+         morequesmoreanswr_num = as.numeric(morequesmoreanswr) - 1,
+         godviabodyexperiences = factor(godviabodyexperiences,
+                               levels = c("No", "Yes")),
+         godviabodyexperiences_num = as.numeric(godviabodyexperiences) - 1) %>%
+  select(country, researcher, urban_rural, charismatic_local, subject_name,
+         starts_with("morequesmoreanswr"), starts_with("godviabodyexperiences"))
+
+contrasts(d9$country) <- cbind("GH" = c(-1, 1, 0, 0, 0),
+                               "TH" = c(-1, 0, 1, 0, 0),
+                               "CH" = c(-1, 0, 0, 1, 0),
+                               "VT" = c(-1, 0, 0, 0, 1))
+contrasts(d9$morequesmoreanswr) <- cbind("Q" = c(1, -1))
+
+r9 <- glm(godviabodyexperiences_num ~ morequesmoreanswr + country,
+                  family = "binomial", data = d9)
+summary(r9)
+```
+
+# To do
+
+Here are other things on our to-do list:
+
+- Experiences by sense (Josh)
+- Extremity of experiences (Josh)
+- ...

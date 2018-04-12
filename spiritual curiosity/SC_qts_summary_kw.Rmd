@@ -1,8 +1,9 @@
 ---
 title: 'QTS data: Spiritual curiosity'
-subtitle: 'Last updated 2018-04-10'
+subtitle: 'Last updated 2018-04-12'
 output:
-  html_notebook: default
+  html_notebook: 
+    toc: true
   html_document:
     df_print: paged
   pdf_document: default
@@ -56,21 +57,21 @@ custom_histo("tongues")
 
 # Personal communication with God*
 
-## ... via other people
+## via other people
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("godviapeople")
 custom_histo("godviapeople_freq")
 ```
 
-## ... via scripture
+## via scripture
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("godviascript")
 custom_histo("godviascript_freq")
 ```
 
-## ... via God* speaking in your mind
+## via God* speaking in your mind
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("godviamind")
@@ -79,19 +80,19 @@ custom_histo("godviamind_freq")
 
 ## Qualities of the voice of God*
 
-### ... you can be mistaken
+### you can be mistaken
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("godvoxmistaken") 
 ```
 
-### ... strong
+### strong
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("godvoxstrong")
 ```
 
-### ... a voice out loud
+### a voice out loud
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("godvoxaloud")
@@ -103,14 +104,14 @@ custom_histo("godvoxaloud_freq")
 custom_histo("godvoxaloud_judge")
 ```
 
-# ... via pictures
+# via pictures
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("godcommpics")
 custom_histo("godcommpics_freq")
 ```
 
-## ... via visions
+## via visions
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("godviavisions")
@@ -121,21 +122,21 @@ custom_histo("godviavisions_freq")
 custom_histo("godviavisions_judge")
 ```
 
-## ... via dreams
+## via dreams
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("godviadreams")
 custom_histo("godviadreams_freq")
 ```
 
-# ... via knowing
+# via knowing
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("godguideviaknowing")
 custom_histo("godguideviaknowing_freq")
 ```
 
-## ... via the body
+## via the body
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("godsenseplaceinbody")
@@ -143,7 +144,7 @@ custom_histo("godsenseplaceinbody_loc")
 custom_histo("godviabodyexperiences")
 ```
 
-## ... via touch
+## via touch
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("godviatouch")
@@ -153,7 +154,7 @@ custom_histo("godviatouch_freq")
 custom_histo("godviatouch_judge")
 ```
 
-## ... via smell
+## via smell
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("godviasmell")
@@ -163,7 +164,7 @@ custom_histo("godviasmell_freq")
 custom_histo("godviasmell_judge")
 ```
 
-## ... ways of feeling beyond the everyday
+## ways of feeling beyond the everyday
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("godexpviaawe")
@@ -173,13 +174,13 @@ custom_histo("godexpviaawe_freqcombo")
 
 # Presence of God*
 
-## ... moment of confirmation
+## moment of confirmation
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("godconfirm")
 ```
 
-## ... tangibility
+## tangibility
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("neartangiblegod")
@@ -187,7 +188,7 @@ custom_histo("neartangiblegod_freq")
 custom_histo("neartangiblegod_judge")
 ```
 
-## ... other presences
+## other presences
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("presencenotgod")
@@ -195,7 +196,7 @@ custom_histo("presencenotgod_freq")
 custom_histo("presencenotgod_judge")
 ```
 
-## ... presence of demons
+## presence of demons
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("presencedemon")
@@ -203,7 +204,7 @@ custom_histo("presencedemon_freq")
 custom_histo("presencedemon_judge")
 ```
 
-## ... another being entering the body
+## another being entering the body
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("beingentbody")
@@ -211,14 +212,14 @@ custom_histo("beingentbody_freq")
 custom_histo("beingentbody_judge")
 ```
 
-## ... other entities
+## other entities
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("seehearnotgod")
 custom_histo("seehearnotgod_judge")
 ```
 
-## ... white lights
+## white lights
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("whitelight")
@@ -227,62 +228,62 @@ custom_histo("whitelight_judge")
 
 # Experiences
 
-## ... trembling & shaking
+## trembling & shaking
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("whitelight_judge")
 custom_histo("trmblshakespirtpwr_freq")
 ```
 
-## ... rush of power
+## rush of power
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("rushofspiritpwr")
 custom_histo("rushofspiritpwr_freq")
 ```
 
-## ... intense emotion
+## intense emotion
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("intenseemospiritpwr")
 custom_histo("intenseemospiritpwr_freq")
 ```
 
-## ... time slowing
+## time slowing
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("timeslowpray")
 custom_histo("timeslowpray_freq")
 ```
 
-## ... out of body
+## out of body
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("mindspiritexitbody")
 custom_histo("mindspiritexitbody_freq")
 ```
 
-## ... human shape-shifting
+## human shape-shifting
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("humanshapeshift")
 ```
 
-## ... other encounters with spirit beings
+## other encounters with spirit beings
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("spiritbeingencounter")
 custom_histo("spiritbeingencounter_judge")
 ```
 
-## ... sleep paralysis
+## sleep paralysis
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("sleepparalysis")
 custom_histo("sleepparalysis_freq")
 ```
 
-## ... sleep habits
+## sleep habits
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("sleephabit")
@@ -290,7 +291,7 @@ custom_histo("sleephabit")
 
 # Voices
 
-## ... hearing a voice when you're alone
+## hearing a voice when you're alone
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("voxwhenalone")
@@ -302,7 +303,7 @@ custom_histo("voxwhenalone_freq")
 custom_histo("voxwhenalone_judge")
 ```
 
-## ... seeing something out of the corner of your eye
+## seeing something out of the corner of your eye
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("seethingscornereye")
@@ -315,20 +316,20 @@ custom_histo("seethingscornereye_judge")
 
 # Skepticism, doubt, spiritual growth
 
-## ... others' doubt
+## others' doubt
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("othergodnotreal")
 ```
 
-## ... own doubt
+## own doubt
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("selfunsuregodreal")
 custom_histo("goddoubt")
 ```
 
-## ... spiritual growth
+## spiritual growth
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("goddoubtdisclose")
@@ -340,7 +341,7 @@ custom_histo("deepquesdefanswr")
 
 # Researcher meta-judgments
 
-## ... of unusual experiences (by sensory modality)
+## of unusual experiences (by sensory modality)
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("unusualexphearing_judge")
@@ -350,7 +351,7 @@ custom_histo("unusualexpgod_judge")
 custom_histo("unusualexpentity_judge")
 ```
 
-## ... of quality of responses
+## of quality of responses
 
 ```{r, fig.width = 3, fig.asp = 1}
 custom_histo("trueanswers_judge")
