@@ -6,7 +6,8 @@ d <- d %>%
                              subject_age == "53"),
                           "US",
                           ifelse(subject_name %in% c("Goody Baidoo", 
-                                                     "Sam Asare-darkwa"),
+                                                     "Sam Asare-darkwa",
+                                                     "Ama Nyamekye"),
                                  "Ghana",
                                  as.character(country))),
          quad = ifelse((subject_name == "Elizabeth Barrios" &
@@ -15,7 +16,9 @@ d <- d %>%
                        ifelse(subject_name %in% c("Goody Baidoo", 
                                                   "Sam Asare-darkwa"),
                               "URBAN CHRISTIAN",
-                              as.character(quad))))
+                              ifelse(subject_name == "Ama Nyamekye",
+                                     "URBAN NON- CHRISTIAN",
+                                     as.character(quad)))))
 
 # recode things!
 d <- d %>%
