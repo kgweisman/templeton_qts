@@ -21,12 +21,16 @@ library(rms)
 library(knitr)
 library(kableExtra)
 library(ordinal)
+library(lme4)
 
 # run setup script
 source("/Users/kweisman/Documents/Research (Stanford)/Projects/Templeton Grant/DATA WRANGLING/templeton_qts/scripts/setup_qts_kw.R")
 
 # run data wrangling script
 source("/Users/kweisman/Documents/Research (Stanford)/Projects/Templeton Grant/DATA WRANGLING/templeton_qts/scripts/wrangling_qts_kw.R")
+
+# run data categorization script
+source("/Users/kweisman/Documents/Research (Stanford)/Projects/Templeton Grant/DATA WRANGLING/templeton_qts/scripts/categories_qts_kw.R")
 
 # set key
 key <- key_sc
@@ -356,6 +360,182 @@ r3 <- glm(godviabodyexperiences_num ~ prayfreqmin + country,
                   family = "binomial", data = d3)
 summary(r3)
 ```
+
+### Aggregate spiritual experiences score
+
+```{r, fig.width = 3, fig.asp = 1}
+d_spirit %>%
+  filter(!is.na(prayfreqmin), !is.na(spex_score)) %>%
+  distinct(country, researcher, urban_rural, charismatic_local,
+           subject_name, prayfreqmin, spex_score) %>%
+  ggplot(aes(x = prayfreqmin, y = spex_score, color = researcher)) +
+  facet_grid(urban_rural ~ charismatic_local ~ country) +
+  geom_point(alpha = 0.3, position = position_jitter(0.2, 0)) +
+  scale_color_manual(values = custom_pal) +
+  labs(title = paste("prayfreqmin", "spex_score", sep = " x "),
+       # subtitle = "Excluding people who did not have a clear answer",
+       x = "prayfreqmin",
+       y = "spex_score",
+       color = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(color = guide_legend(ncol = 6, byrow = TRUE, 
+                              override.aes = list(alpha = 1)))
+```
+
+```{r, fig.width = 3, fig.asp = 0.6}
+d_spirit %>%
+  filter(!is.na(prayfreqmin), !is.na(spex_score)) %>%
+  distinct(country, researcher, urban_rural, charismatic_local,
+           subject_name, prayfreqmin, spex_score) %>%
+  ggplot(aes(x = prayfreqmin, y = spex_score, 
+             color = country, fill = country, group = country)) +
+  facet_grid(. ~ country) +
+  geom_point(alpha = 0.3, position = position_jitter(0.2, 0)) +
+  geom_smooth(aes(x = as.numeric(prayfreqmin)), method = "lm") +
+  # geom_smooth(aes(x = as.numeric(prayfreqmin)), method = "loess") +
+  # scale_color_manual(values = custom_pal) +
+  # scale_fill_manual(values = custom_pal) +
+  scale_color_brewer(palette = "Dark2") +
+  scale_fill_brewer(palette = "Dark2") +
+  labs(title = paste("prayfreqmin", "spex_score", sep = " x "),
+       # subtitle = "Excluding people who did not have a clear answer",
+       x = "prayfreqmin",
+       y = "spex_score",
+       color = "Researcher", fill = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(color = guide_legend(ncol = 6, byrow = TRUE, 
+                              override.aes = list(alpha = 1)),
+         fill = guide_legend(ncol = 6, byrow = TRUE))
+```
+
+```{r}
+d_agg1 <- d_spirit %>%
+  filter(!is.na(prayfreqmin), !is.na(spex_score),
+         prayfreqmin != "Other", spex_score != "Other") %>%
+  # distinct(country, researcher, urban_rural, charismatic_local,
+  #          subject_name, prayfreqmin, spex_score) %>%
+  mutate(prayfreqmin_num = as.numeric(prayfreqmin) - 1) # %>%
+  # select(country, researcher, urban_rural, charismatic_local, subject_name,
+  #        starts_with("prayfreqmin"), starts_with("spex_score"))
+
+contrasts(d_agg1$country) <- cbind("GH" = c(-1, 1, 0, 0, 0),
+                               "TH" = c(-1, 0, 1, 0, 0),
+                               "CH" = c(-1, 0, 0, 1, 0),
+                               "VT" = c(-1, 0, 0, 0, 1))
+contrasts(d_agg1$prayfreqmin) <- contr.poly(4)
+
+r_agg1 <- lmer(response ~ prayfreqmin + country 
+               + (1 | subject_name) + (1 | question), 
+               data = d_agg1)
+summary(r_agg1)
+
+r_agg2 <- lmer(response ~ prayfreqmin * country 
+               + (1 | subject_name) + (1 | question), 
+               data = d_agg1)
+summary(r_agg2)
+
+anova(r_agg1, r_agg2)
+```
+
+```{r, fig.width = 3, fig.asp = 0.6}
+d_r_agg1_predicted <- d_agg1 %>%
+  mutate(response_pred = predict(r_agg1, d_agg1)) %>%
+  group_by(subject_name) %>%
+  mutate(spex_score_pred = sum(response_pred, na.rm = T)) %>%
+  ungroup() %>%
+  group_by(country, prayfreqmin) %>%
+  do(data.frame(rbind(smean.cl.boot(.$spex_score_pred))))
+
+d_spirit %>%
+  filter(!is.na(prayfreqmin), !is.na(spex_score)) %>%
+  distinct(country, researcher, urban_rural, charismatic_local,
+           subject_name, prayfreqmin, spex_score) %>%
+  ggplot(aes(x = prayfreqmin, y = spex_score, 
+             color = country, fill = country, group = country)) +
+  facet_grid(. ~ country) +
+  geom_point(alpha = 0.3, position = position_jitter(0.2, 0)) +
+  geom_line(data = d_r_agg1_predicted, aes(y = Mean)) +
+  geom_ribbon(data = d_r_agg1_predicted, 
+              aes(ymin = Lower, ymax = Upper, y = NULL), 
+              alpha = 0.5, size = 0) +
+  # scale_color_manual(values = custom_pal) +
+  # scale_fill_manual(values = custom_pal) +
+  scale_color_brewer(palette = "Dark2") +
+  scale_fill_brewer(palette = "Dark2") +
+  labs(title = paste("prayfreqmin", "spex_score", sep = " x "),
+       subtitle = "Lines are predictions from a mixed effects linear regression:\nlmer(response ~ prayfreqmin + country + (1 | subject_name) + (1 | question)",
+       x = "prayfreqmin",
+       y = "spex_score",
+       color = "Site", fill = "Site") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(color = "none",
+         fill = "none")
+```
+
+### Looking just at 'apples' (urban charismatics)
+
+```{r, fig.width = 3, fig.asp = 0.5}
+d_spirit %>%
+  filter(!is.na(prayfreqmin), !is.na(spex_score),
+         quad == "urban charismatic") %>%
+  distinct(country, researcher, charismatic_local, urban_rural, 
+           subject_name, prayfreqmin, spex_score) %>%
+  ggplot(aes(x = prayfreqmin, y = spex_score, 
+             color = country, fill = country, group = country)) +
+  facet_grid(charismatic_local ~ urban_rural ~ country) +
+  geom_point(alpha = 0.3, position = position_jitter(0.2, 0)) +
+  geom_smooth(method = "lm") +
+  # scale_color_manual(values = custom_pal) +
+  # scale_fill_manual(values = custom_pal) +
+  scale_color_brewer(palette = "Dark2") +
+  scale_fill_brewer(palette = "Dark2") +
+  labs(title = paste("prayfreqmin", "spex_score", sep = " x "),
+       # subtitle = "Lines are predictions from a mixed effects linear regression:\nlmer(response ~ prayfreqmin + country + (1 | subject_name) + (1 | question)",
+       x = "prayfreqmin",
+       y = "spex_score",
+       color = "Site", fill = "Site") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(color = "none",
+         fill = "none")
+```
+
+### Looking at all charismatics
+
+```{r, fig.width = 3, fig.asp = 0.5}
+d_spirit %>%
+  filter(!is.na(prayfreqmin), !is.na(spex_score),
+         charismatic_local == "charismatic") %>%
+  distinct(country, researcher, charismatic_local, urban_rural, 
+           subject_name, prayfreqmin, spex_score) %>%
+  ggplot(aes(x = prayfreqmin, y = spex_score, 
+             color = country, fill = country, group = country)) +
+  facet_grid(charismatic_local ~ country) +
+  geom_point(alpha = 0.3, position = position_jitter(0.2, 0)) +
+  geom_smooth(method = "lm") +
+  # scale_color_manual(values = custom_pal) +
+  # scale_fill_manual(values = custom_pal) +
+  scale_color_brewer(palette = "Dark2") +
+  scale_fill_brewer(palette = "Dark2") +
+  labs(title = paste("prayfreqmin", "spex_score", sep = " x "),
+       # subtitle = "Lines are predictions from a mixed effects linear regression:\nlmer(response ~ prayfreqmin + country + (1 | subject_name) + (1 | question)",
+       x = "prayfreqmin",
+       y = "spex_score",
+       color = "Site", fill = "Site") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(color = "none",
+         fill = "none")
+```
+
 
 # Doubt & external sensory experiences
 *Requested by Emily, John*

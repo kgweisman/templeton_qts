@@ -27,6 +27,9 @@ source("/Users/kweisman/Documents/Research (Stanford)/Projects/Templeton Grant/D
 # run data wrangling script
 source("/Users/kweisman/Documents/Research (Stanford)/Projects/Templeton Grant/DATA WRANGLING/templeton_qts/scripts/wrangling_qts_kw.R")
 
+# run categorization script
+source("/Users/kweisman/Documents/Research (Stanford)/Projects/Templeton Grant/DATA WRANGLING/templeton_qts/scripts/categories_qts_kw.R")
+
 # set key
 key <- key_sc
 ```
@@ -358,3 +361,64 @@ custom_histo("trueanswers_judge")
 custom_histo("falseanswers_judge")
 ```
 
+# Aggregating all spiritual experiences together
+
+**Questions ID'd by Josh on 2018-04-12**
+
+```{r, fig.width = 4, fig.asp = 0.6}
+d_spirit %>%
+  distinct(country, researcher, urban_rural, charismatic_local, 
+           subject_name, spex_score) %>%
+  group_by(country, researcher, urban_rural, charismatic_local) %>%
+  do(data.frame(rbind(smean.cl.boot(.$spex_score)))) %>%
+  ungroup() %>%
+  ggplot(aes(x = interaction(charismatic_local, urban_rural), 
+             y = Mean, color = researcher)) +
+  facet_grid(~ country, scales = "free", space = "free") +
+  geom_pointrange(aes(ymin = Lower, ymax = Upper)) +
+  geom_text(aes(label = round(Mean, 1), y = Lower), 
+            color = "black", nudge_y = -2, size = 2) +
+  scale_color_manual(values = custom_pal) +
+  scale_y_continuous(limits = c(0, 24)) +
+  labs(title = "Mean responses: total 'spiritual experience' score (range: 0-24)",
+       subtitle = "Error bars are 95% confidence intervals",
+       x = "Score",
+       y = "Count",
+       color = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(color = guide_legend(ncol = 6, byrow = TRUE))
+```
+
+```{r, fig.width = 3, fig.asp = 1}
+d_spirit %>%
+  filter(!is.na(spex_score)) %>%
+  distinct(country, researcher, urban_rural, charismatic_local, 
+           subject_name, spex_score) %>%
+  group_by(country, urban_rural, charismatic_local) %>%
+  mutate(med_abs = median(spex_score, na.rm = T)) %>%
+  ungroup() %>%
+  ggplot(aes(x = spex_score, fill = researcher)) +
+  facet_grid(urban_rural ~ charismatic_local ~ country) +
+  geom_vline(aes(xintercept = med_abs), lty = 2, size = 0.2) +
+  geom_histogram(binwidth = 0.2 * (max(d_spirit$spex_score, na.rm = T) -
+                                     min(d_spirit$spex_score, na.rm = T) + 1)) +
+  geom_text(data = . %>% 
+              distinct(country, urban_rural, charismatic_local, med_abs),
+            aes(x = 0, y = 12, fill = NULL,
+                label = paste0("Median: ", med_abs)),
+            size = 2, hjust = 0) +
+  scale_fill_manual(values = custom_pal) +
+  scale_alpha_discrete(guide = "none", range = c(0.5, 1)) +
+  scale_x_continuous(limits = c(0, 24), breaks = seq(0, 100, 5)) +
+  labs(title = paste("Distribution of responses:", "spex_score"),
+       subtitle = "Sum of all 'spiritual experience' items (range: 0-24)",
+       x = "Score",
+       y = "Count",
+       fill = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(fill = guide_legend(ncol = 6, byrow = TRUE))
+```

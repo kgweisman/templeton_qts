@@ -3,7 +3,7 @@ d <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/Templeton 
 # manually correct participant info
 d <- d %>%
   mutate(subject_name = ifelse(subject_name != "Elizabeth Barrios",
-                               subject_name,
+                               as.character(subject_name),
                                ifelse(subject_age == "53",
                                       "Elizabeth Barrios (Sr)",
                                       "Elizabeth Barrios (Jr)")),

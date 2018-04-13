@@ -61,7 +61,7 @@ d %>%
   theme_bw() +
   theme(legend.position = "top",
         axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
-  guides(fill = guide_legend(ncol = 6, byrow = TRUE))
+  guides(color = guide_legend(ncol = 6, byrow = TRUE))
 ```
 
 ```{r, fig.width = 3, fig.asp = 1}
@@ -361,8 +361,9 @@ custom_histo("magicalthinking")
 
 ```{r, fig.width = 4, fig.asp = 0.6}
 d %>%
-  select(subject_name, country, researcher, urban_rural, charismatic_local, 
-         ends_with("_scid")) %>%
+  select(subject_name, country, researcher, urban_rural, charismatic_local,
+           ends_with("_scid")) %>%
+  distinct() %>%
   gather(question, response, ends_with("_scid")) %>%
   mutate(response = as.numeric(factor(response,
                                       levels = c("Not present",
@@ -382,7 +383,7 @@ d %>%
   geom_text(aes(label = round(Mean, 1), y = Lower), 
             color = "black", nudge_y = -2, size = 2) +
   scale_color_manual(values = custom_pal) +
-  scale_y_continuous(limits = c(0, 28)) +
+  scale_y_continuous(limits = c(0, 28), breaks = seq(0, 30, 5)) +
   labs(title = "Mean responses: total SCID score (range: 0-28)",
        subtitle = "Error bars are 95% confidence intervals",
        x = "Score",
@@ -391,13 +392,14 @@ d %>%
   theme_bw() +
   theme(legend.position = "top",
         axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
-  guides(fill = guide_legend(ncol = 6, byrow = TRUE))
+  guides(color = guide_legend(ncol = 6, byrow = TRUE))
 ```
 
 ```{r, fig.width = 3, fig.asp = 1}
 d %>%
   select(subject_name, country, researcher, urban_rural, charismatic_local, 
          ends_with("_scid")) %>%
+  distinct() %>%
   gather(question, response, ends_with("_scid")) %>%
   mutate(response = as.numeric(factor(response,
                                       levels = c("Not present",
@@ -416,7 +418,7 @@ d %>%
   geom_histogram(binwidth = 1) +
   geom_text(data = . %>% 
               distinct(country, urban_rural, charismatic_local, med_scid),
-            aes(x = 0, y = 20, fill = NULL,
+            aes(x = 0, y = 15, fill = NULL,
                 label = paste0("Median: ", med_scid)),
             size = 2, hjust = 0) +
   scale_fill_manual(values = custom_pal) +

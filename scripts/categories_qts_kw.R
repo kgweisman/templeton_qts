@@ -3,7 +3,8 @@ d_spirit <- d %>%
   # mutate_at(vars(godviapeople, godviascript, godviamind, godvoxaloud, 
   #                godcommpics, godviavisions, godviadreams, godguideviaknowing, 
   #                godguideviasensations, godsenseplaceinbody, godviatouch, 
-  #                godviasmell, godexpviaawe, neartangiblegod, presencenotgod, 
+  #                godviasmell, # godexpviaawe, 
+  #                neartangiblegod, presencenotgod, 
   #                presencedemon, beingentbody, seehearnotgod, whitelight, 
   #                trmblshakespirtpwr, rushofspiritpwr, intenseemospiritpwr, 
   #                timeslowpray, mindspiritexitbody, spiritbeingencounter),
@@ -12,7 +13,8 @@ d_spirit <- d %>%
          c(godviapeople, godviascript, godviamind, godvoxaloud, 
            godcommpics, godviavisions, godviadreams, godguideviaknowing, 
            godguideviasensations, godsenseplaceinbody, godviatouch, 
-           godviasmell, godexpviaawe, neartangiblegod, presencenotgod, 
+           godviasmell, # godexpviaawe, 
+           neartangiblegod, presencenotgod, 
            presencedemon, beingentbody, seehearnotgod, whitelight, 
            trmblshakespirtpwr, rushofspiritpwr, intenseemospiritpwr, 
            timeslowpray, mindspiritexitbody, spiritbeingencounter)) %>%
@@ -22,8 +24,14 @@ d_spirit <- d %>%
                            "Maybe" = 0.5,
                            "Yes" = 1)) %>%
   group_by(question) %>%
-  mutate(max_response = max(response, na.rm = T),
-         response_norm = response/max_response)
+  # mutate(max_response = max(response, na.rm = T),
+  #        response_norm = response/max_response) %>%
+  ungroup() %>%
+  distinct() %>%
+  group_by(subject_name) %>%
+  mutate(spex_score = sum(response, na.rm = T)) %>%
+  ungroup() %>%
+  distinct()
 
 # aggregate experiences by sensory modality
 d_sense <- d %>%
@@ -43,8 +51,8 @@ d_sense <- d %>%
                            "Maybe" = 0.5,
                            "Yes" = 1)) %>%
   group_by(question) %>%
-  mutate(max_response = max(response, na.rm = T),
-         response_norm = response/max_response,
+  mutate(#max_response = max(response, na.rm = T),
+         #response_norm = response/max_response,
          sense = factor(case_when(
            question %in% c("godguideviasensations", "godviabodyexperiences",
                            "godviatouch", "trmblshakespirtpwr", 
@@ -57,4 +65,11 @@ d_sense <- d %>%
            question %in% c("neartangiblegod", "presencenotgod", "presencedemon", 
                            "seehearnotgod", "spiritbeingencounter") ~ "Presence",
            question %in% c("godguideviaknowing") ~ "Other"),
-           levels = c("Image", "Voice", "Tactile", "Smell", "Presence", "Other")))
+           levels = c("Image", "Voice", "Tactile", "Smell", 
+                      "Presence", "Other"))) %>%
+  ungroup() %>%
+  distinct() %>%
+  group_by(subject_name, sense) %>%
+  mutate(sense_score = sum(response, na.rm = T)) %>%
+  ungroup() %>%
+  distinct()
