@@ -1194,6 +1194,182 @@ r9 <- glm(godviabodyexperiences_num ~ morequesmoreanswr + country,
 summary(r9)
 ```
 
+# Absorption & spiritual experiences
+
+### Aggregate spiritual experiences score
+
+```{r, fig.width = 3, fig.asp = 1}
+d_spirit %>%
+  filter(!is.na(abs_score), !is.na(spex_score)) %>%
+  distinct(country, researcher, urban_rural, charismatic_local,
+           subject_name, abs_score, spex_score) %>%
+  ggplot(aes(x = abs_score, y = spex_score, color = researcher)) +
+  facet_grid(urban_rural ~ charismatic_local ~ country) +
+  geom_point(alpha = 0.3, position = position_jitter(0.2, 0)) +
+  scale_color_manual(values = custom_pal) +
+  labs(title = paste("abs_score", "spex_score", sep = " x "),
+       # subtitle = "Excluding people who did not have a clear answer",
+       x = "abs_score",
+       y = "spex_score",
+       color = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(color = guide_legend(ncol = 6, byrow = TRUE, 
+                              override.aes = list(alpha = 1)))
+```
+
+```{r, fig.width = 3, fig.asp = 0.6}
+d_spirit %>%
+  filter(!is.na(abs_score), !is.na(spex_score)) %>%
+  distinct(country, researcher, urban_rural, charismatic_local,
+           subject_name, abs_score, spex_score) %>%
+  ggplot(aes(x = abs_score, y = spex_score, 
+             color = country, fill = country, group = country)) +
+  facet_grid(. ~ country) +
+  geom_point(alpha = 0.3, position = position_jitter(0.2, 0)) +
+  geom_smooth(aes(x = as.numeric(abs_score)), method = "lm") +
+  # geom_smooth(aes(x = as.numeric(abs_score)), method = "loess") +
+  # scale_color_manual(values = custom_pal) +
+  # scale_fill_manual(values = custom_pal) +
+  scale_color_brewer(palette = "Dark2") +
+  scale_fill_brewer(palette = "Dark2") +
+  labs(title = paste("abs_score", "spex_score", sep = " x "),
+       # subtitle = "Excluding people who did not have a clear answer",
+       x = "abs_score",
+       y = "spex_score",
+       color = "Researcher", fill = "Researcher") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(color = guide_legend(ncol = 6, byrow = TRUE, 
+                              override.aes = list(alpha = 1)),
+         fill = guide_legend(ncol = 6, byrow = TRUE))
+```
+
+```{r}
+d_agg2 <- d_spirit %>%
+  filter(!is.na(abs_score), !is.na(spex_score),
+         abs_score != "Other", spex_score != "Other") %>%
+  # distinct(country, researcher, urban_rural, charismatic_local,
+  #          subject_name, abs_score, spex_score) %>%
+  mutate(abs_score_num = as.numeric(abs_score) - 1) # %>%
+  # select(country, researcher, urban_rural, charismatic_local, subject_name,
+  #        starts_with("abs_score"), starts_with("spex_score"))
+
+contrasts(d_agg2$country) <- cbind("GH" = c(-1, 1, 0, 0, 0),
+                               "TH" = c(-1, 0, 1, 0, 0),
+                               "CH" = c(-1, 0, 0, 1, 0),
+                               "VT" = c(-1, 0, 0, 0, 1))
+
+r_agg3 <- lmer(response ~ scale(abs_score, scale = F) + country 
+               + (1 | subject_name) + (1 | question), 
+               data = d_agg2)
+summary(r_agg3)
+
+r_agg4 <- lmer(response ~ scale(abs_score, scale = F) * country 
+               + (1 | subject_name) + (1 | question), 
+               data = d_agg2)
+summary(r_agg4)
+
+anova(r_agg3, r_agg4)
+```
+
+```{r, fig.width = 3, fig.asp = 0.6}
+d_r_agg3_predicted <- d_agg2 %>%
+  mutate(response_pred = predict(r_agg3, d_agg2)) %>%
+  group_by(subject_name) %>%
+  mutate(spex_score_pred = sum(response_pred, na.rm = T)) %>%
+  ungroup() %>%
+  group_by(country, abs_score) %>%
+  do(data.frame(rbind(smean.cl.boot(.$spex_score_pred))))
+
+d_spirit %>%
+  filter(!is.na(abs_score), !is.na(spex_score)) %>%
+  distinct(country, researcher, urban_rural, charismatic_local,
+           subject_name, abs_score, spex_score) %>%
+  ggplot(aes(x = abs_score, y = spex_score, 
+             color = country, fill = country, group = country)) +
+  facet_grid(. ~ country) +
+  geom_point(alpha = 0.3, position = position_jitter(0.2, 0)) +
+  geom_line(data = d_r_agg3_predicted, aes(y = Mean)) +
+  geom_ribbon(data = d_r_agg3_predicted, 
+              aes(ymin = Lower, ymax = Upper, y = NULL), 
+              alpha = 0.5, size = 0) +
+  # scale_color_manual(values = custom_pal) +
+  # scale_fill_manual(values = custom_pal) +
+  scale_color_brewer(palette = "Dark2") +
+  scale_fill_brewer(palette = "Dark2") +
+  labs(title = paste("abs_score", "spex_score", sep = " x "),
+       subtitle = "Lines are predictions from a mixed effects linear regression:\nlmer(response ~ abs_score + country + (1 | subject_name) + (1 | question)",
+       x = "abs_score",
+       y = "spex_score",
+       color = "Site", fill = "Site") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(color = "none",
+         fill = "none")
+```
+
+### Looking just at 'apples' (urban charismatics)
+
+```{r, fig.width = 3, fig.asp = 0.5}
+d_spirit %>%
+  filter(!is.na(abs_score), !is.na(spex_score),
+         quad == "urban charismatic") %>%
+  distinct(country, researcher, charismatic_local, urban_rural, 
+           subject_name, abs_score, spex_score) %>%
+  ggplot(aes(x = abs_score, y = spex_score, 
+             color = country, fill = country, group = country)) +
+  facet_grid(charismatic_local ~ urban_rural ~ country) +
+  geom_point(alpha = 0.3, position = position_jitter(0.2, 0)) +
+  geom_smooth(method = "lm") +
+  # scale_color_manual(values = custom_pal) +
+  # scale_fill_manual(values = custom_pal) +
+  scale_color_brewer(palette = "Dark2") +
+  scale_fill_brewer(palette = "Dark2") +
+  labs(title = paste("abs_score", "spex_score", sep = " x "),
+       # subtitle = "Lines are predictions from a mixed effects linear regression:\nlmer(response ~ abs_score + country + (1 | subject_name) + (1 | question)",
+       x = "abs_score",
+       y = "spex_score",
+       color = "Site", fill = "Site") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(color = "none",
+         fill = "none")
+```
+
+### Looking at all charismatics
+
+```{r, fig.width = 3, fig.asp = 0.5}
+d_spirit %>%
+  filter(!is.na(abs_score), !is.na(spex_score),
+         charismatic_local == "charismatic") %>%
+  distinct(country, researcher, charismatic_local, urban_rural, 
+           subject_name, abs_score, spex_score) %>%
+  ggplot(aes(x = abs_score, y = spex_score, 
+             color = country, fill = country, group = country)) +
+  facet_grid(charismatic_local ~ country) +
+  geom_point(alpha = 0.3, position = position_jitter(0.2, 0)) +
+  geom_smooth(method = "lm") +
+  # scale_color_manual(values = custom_pal) +
+  # scale_fill_manual(values = custom_pal) +
+  scale_color_brewer(palette = "Dark2") +
+  scale_fill_brewer(palette = "Dark2") +
+  labs(title = paste("abs_score", "spex_score", sep = " x "),
+       # subtitle = "Lines are predictions from a mixed effects linear regression:\nlmer(response ~ abs_score + country + (1 | subject_name) + (1 | question)",
+       x = "abs_score",
+       y = "spex_score",
+       color = "Site", fill = "Site") +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(color = "none",
+         fill = "none")
+```
+
 # To do
 
 Here are other things on our to-do list:
