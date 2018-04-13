@@ -1,13 +1,13 @@
 # aggregate all "spiritual" experiences
 d_spirit <- d %>%
-  mutate_at(vars(godviapeople, godviascript, godviamind, godvoxaloud, 
-                 godcommpics, godviavisions, godviadreams, godguideviaknowing, 
-                 godguideviasensations, godsenseplaceinbody, godviatouch, 
-                 godviasmell, godexpviaawe, neartangiblegod, presencenotgod, 
-                 presencedemon, beingentbody, seehearnotgod, whitelight, 
-                 trmblshakespirtpwr, rushofspiritpwr, intenseemospiritpwr, 
-                 timeslowpray, mindspiritexitbody, spiritbeingencounter),
-            funs(. %>% as.numeric() %>% - 1)) %>%
+  # mutate_at(vars(godviapeople, godviascript, godviamind, godvoxaloud, 
+  #                godcommpics, godviavisions, godviadreams, godguideviaknowing, 
+  #                godguideviasensations, godsenseplaceinbody, godviatouch, 
+  #                godviasmell, godexpviaawe, neartangiblegod, presencenotgod, 
+  #                presencedemon, beingentbody, seehearnotgod, whitelight, 
+  #                trmblshakespirtpwr, rushofspiritpwr, intenseemospiritpwr, 
+  #                timeslowpray, mindspiritexitbody, spiritbeingencounter),
+  #           funs(. %>% as.numeric() %>% - 1)) %>%
   gather(question, response,
          c(godviapeople, godviascript, godviamind, godvoxaloud, 
            godcommpics, godviavisions, godviadreams, godguideviaknowing, 
@@ -16,22 +16,32 @@ d_spirit <- d %>%
            presencedemon, beingentbody, seehearnotgod, whitelight, 
            trmblshakespirtpwr, rushofspiritpwr, intenseemospiritpwr, 
            timeslowpray, mindspiritexitbody, spiritbeingencounter)) %>%
+  filter(!response %in% c("Other", "NA", " ", ""), !is.na(response)) %>%
+  mutate(response = recode(response,
+                           "No" = 0,
+                           "Maybe" = 0.5,
+                           "Yes" = 1)) %>%
   group_by(question) %>%
   mutate(max_response = max(response, na.rm = T),
          response_norm = response/max_response)
 
 # aggregate experiences by sensory modality
 d_sense <- d %>%
-  mutate_at(vars(godguideviasensations, godviabodyexperiences, godviatouch,
-                 trmblshakespirtpwr, rushofspiritpwr, mindspiritexitbody, 
-                 neartangiblegod, godviamind, godvoxaloud, godcommpics, 
-                 godviavisions, godviadreams, godguideviaknowing, godviasmell),
-            funs(. %>% as.numeric() %>% -1)) %>%
+  # mutate_at(vars(godguideviasensations, godviabodyexperiences, godviatouch,
+  #                trmblshakespirtpwr, rushofspiritpwr, mindspiritexitbody, 
+  #                neartangiblegod, godviamind, godvoxaloud, godcommpics, 
+  #                godviavisions, godviadreams, godguideviaknowing, godviasmell),
+  #           funs(. %>% as.numeric() %>% -1)) %>%
   gather(question, response,
          c(godguideviasensations, godviabodyexperiences, godviatouch,
            trmblshakespirtpwr, rushofspiritpwr, mindspiritexitbody, 
            neartangiblegod, godviamind, godvoxaloud, godcommpics, godviavisions,
            godviadreams, godguideviaknowing, godviasmell)) %>%
+  filter(!response %in% c("Other", "NA", " ", ""), !is.na(response)) %>%
+  mutate(response = recode(response,
+                           "No" = 0,
+                           "Maybe" = 0.5,
+                           "Yes" = 1)) %>%
   group_by(question) %>%
   mutate(max_response = max(response, na.rm = T),
          response_norm = response/max_response,
@@ -48,4 +58,3 @@ d_sense <- d %>%
                            "seehearnotgod", "spiritbeingencounter") ~ "Presence",
            question %in% c("godguideviaknowing") ~ "Other"),
            levels = c("Image", "Voice", "Tactile", "Smell", "Presence", "Other")))
-

@@ -2,7 +2,12 @@ d <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/Templeton 
 
 # manually correct participant info
 d <- d %>%
-  mutate(country = ifelse((subject_name == "Elizabeth Barrios" & 
+  mutate(subject_name = ifelse(subject_name != "Elizabeth Barrios",
+                               subject_name,
+                               ifelse(subject_age == "53",
+                                      "Elizabeth Barrios (Sr)",
+                                      "Elizabeth Barrios (Jr)")),
+         country = ifelse((subject_name == "Elizabeth Barrios" & 
                              subject_age == "53"),
                           "US",
                           ifelse(subject_name %in% c("Goody Baidoo", 
