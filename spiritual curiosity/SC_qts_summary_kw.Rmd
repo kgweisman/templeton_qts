@@ -234,7 +234,7 @@ custom_histo("whitelight_judge")
 ## trembling & shaking
 
 ```{r, fig.width = 3, fig.asp = 1}
-custom_histo("whitelight_judge")
+custom_histo("trmblshakespirtpwr")
 custom_histo("trmblshakespirtpwr_freq")
 ```
 
